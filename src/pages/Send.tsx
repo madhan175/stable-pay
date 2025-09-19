@@ -141,7 +141,7 @@ const Send = () => {
               <div className="flex items-center space-x-2">
                 <Wallet className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium text-green-800">
-                  Connected: {account?.substring(0, 6)}...{account?.substring(-4)}
+                  Connected: {account?.slice(0, 6)}...{account?.slice(-4)}
                 </span>
               </div>
             </div>

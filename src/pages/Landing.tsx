@@ -50,7 +50,7 @@ const Landing = () => {
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                   <Wallet className="w-5 h-5 text-green-600" />
                   <span className="text-green-800 font-medium">
-                    Connected: {account?.substring(0, 6)}...{account?.substring(-4)}
+                    Connected: {account?.slice(0, 6)}...{account?.slice(-4)}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">

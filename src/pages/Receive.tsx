@@ -160,12 +160,12 @@ const Receive = () => {
                       <tr key={tx.hash} className="hover:bg-gray-50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-gray-900">
-                            {tx.hash.substring(0, 10)}...{tx.hash.substring(-8)}
+                            {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-gray-500">
-                            {tx.from.substring(0, 6)}...{tx.from.substring(-4)}
+                            {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
