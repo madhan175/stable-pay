@@ -38,7 +38,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
 
-      // Store OTP in Supabase
+      // Check if we're in mock mode (placeholder Supabase URL)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl && supabaseUrl.includes('placeholder')) {
+        // Mock mode - store OTP in localStorage
+        const mockOTPs = JSON.parse(localStorage.getItem('mock_otps') || '[]');
+        mockOTPs.push({
+          phone,
+          code: otp,
+          expires_at: expiresAt,
+          verified: false,
+          created_at: new Date().toISOString()
+        });
+        localStorage.setItem('mock_otps', JSON.stringify(mockOTPs));
+        
+        console.log(`🎯 Mock OTP for ${phone}: ${otp}`);
+        return { success: true, otp };
+      }
+
+      // Real Supabase mode
       const { error } = await supabase
         .from('otp_codes')
         .insert({
@@ -61,7 +79,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyOTP = async (phone: string, otp: string) => {
     try {
-      // Check OTP from database
+      // Check if we're in mock mode (placeholder Supabase URL)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      // Always use mock mode for development
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Mock mode - ALWAYS accept any OTP for development
+        console.log(`🎯 Mock OTP verification for ${phone}: ${otp || 'empty'} (BYPASSING OTP VERIFICATION)`);
+        
+        // In mock mode, ALWAYS proceed to user creation/login regardless of OTP
+
+        // Check if user exists in localStorage
+        const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
+        let userData = mockUsers.find((user: any) => user.phone === phone);
+
+        if (!userData) {
+          // Create new user
+          userData = {
+            id: `mock_${Date.now()}`,
+            phone,
+            phone_verified: true,
+            kyc_status: 'none',
+            kyc_documents: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          mockUsers.push(userData);
+          localStorage.setItem('mock_users', JSON.stringify(mockUsers));
+        } else {
+          // Update existing user
+          userData.phone_verified = true;
+          userData.updated_at = new Date().toISOString();
+          const updatedUsers = mockUsers.map((user: any) => 
+            user.phone === phone ? userData : user
+          );
+          localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
+        }
+
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('✅ Mock OTP verification successful - proceeding to next page');
+        return { success: true };
+      }
+
+      // Real Supabase mode
       const { data: otpData, error: otpError } = await supabase
         .from('otp_codes')
         .select('*')
@@ -138,6 +199,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
+      // Check if we're in mock mode
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl && supabaseUrl.includes('placeholder')) {
+        // Mock mode - get user from localStorage
+        const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
+        const userData = mockUsers.find((u: any) => u.id === user.id);
+        
+        if (userData) {
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+        return;
+      }
+
+      // Real Supabase mode
       const { data, error } = await supabase
         .from('users')
         .select('*')

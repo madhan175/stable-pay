@@ -21,8 +21,8 @@ const KYCUpload: React.FC<KYCUploadProps> = ({ onKYCComplete }) => {
     
     // Simulate OCR extraction
     const mockOCRData = {
-      name: 'John Doe',
-      dob: '1995-01-15',
+      name: ' Dineshlingam',
+      dob: '2005-10-06',
       id_number: 'ABCD1234E',
       country: 'India',
       document_type: 'Aadhaar Card'
@@ -42,7 +42,68 @@ const KYCUpload: React.FC<KYCUploadProps> = ({ onKYCComplete }) => {
     setError('');
 
     try {
-      // Upload file to Supabase Storage
+      // Check if we're in mock mode
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const isMockMode = !supabaseUrl || supabaseUrl.includes('placeholder');
+
+      if (isMockMode) {
+        console.log('🎯 Mock mode: Simulating KYC document upload');
+        
+        // Mock file upload - simulate delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Process OCR
+        const ocrResult = await processOCR(file);
+        setOcrData(ocrResult);
+
+        // Validate age (must be 18+)
+        const birthDate = new Date(ocrResult.dob);
+        const age = new Date().getFullYear() - birthDate.getFullYear();
+        const isValidAge = age >= 18;
+
+        if (!isValidAge) {
+          throw new Error('You must be 18 or older to use this service');
+        }
+
+        // Mock KYC document
+        const kycDocument = {
+          type: 'national_id',
+          file_url: `mock://kyc-documents/${user.id}/${Date.now()}.${file.name.split('.').pop()}`,
+          ocr_data: ocrResult,
+          status: 'verified',
+          submitted_at: new Date().toISOString()
+        };
+
+        // Update user in localStorage (mock mode)
+        const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
+        const updatedUsers = mockUsers.map((u: any) => 
+          u.id === user.id 
+            ? { 
+                ...u, 
+                kyc_status: 'verified', 
+                kyc_documents: [kycDocument],
+                updated_at: new Date().toISOString()
+              }
+            : u
+        );
+        localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
+        
+        // Update current user in localStorage
+        const updatedUser = { ...user, kyc_status: 'verified', kyc_documents: [kycDocument] };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        setUploadStatus('success');
+        await refreshUser();
+        
+        // Auto-complete after 2 seconds
+        setTimeout(() => {
+          onKYCComplete();
+        }, 2000);
+        
+        return;
+      }
+
+      // Real Supabase mode
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       

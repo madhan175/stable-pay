@@ -2,10 +2,12 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Coins, ArrowLeftRight, Wallet, Shield, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWallet } from '../context/WalletContext';
 
 const Layout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { isConnected, account, disconnect } = useWallet();
   
   return (
     <div className="min-h-screen">
@@ -45,6 +47,23 @@ const Layout = () => {
                 <Wallet className="w-4 h-4" />
                 <span>Receive</span>
               </Link>
+              
+              {/* Wallet Connection Status */}
+              {isConnected && (
+                <div className="flex items-center space-x-2 px-3 py-2 bg-green-50 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-green-700 hidden sm:inline">
+                    Wallet: {account?.slice(0, 6)}...{account?.slice(-4)}
+                  </span>
+                  <button
+                    onClick={disconnect}
+                    className="p-1 text-green-600 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200"
+                    title="Disconnect Wallet"
+                  >
+                    <LogOut className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               
               {user ? (
                 <div className="flex items-center space-x-2">

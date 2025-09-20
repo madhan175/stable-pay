@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import PhoneVerification from '../components/PhoneVerification';
@@ -21,11 +21,12 @@ const KYC = () => {
     }, 3000);
   };
 
-  // If user is already verified, redirect
-  if (user?.phone_verified && user?.kyc_status === 'verified') {
-    navigate('/send');
-    return null;
-  }
+  // If user is already verified, redirect using useEffect
+  useEffect(() => {
+    if (user?.phone_verified && user?.kyc_status === 'verified') {
+      navigate('/send');
+    }
+  }, [user, navigate]);
 
   const steps = [
     { id: 'phone', label: 'Phone Verification', icon: Phone },
