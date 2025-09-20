@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Wallet, RefreshCw, ExternalLink, Copy, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Wallet, RefreshCw, ExternalLink, Copy, Check, TrendingUp, TrendingDown } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
 import { getUSDTBalance, getRecentTransactions } from '../utils/blockchain';
+import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 
 interface Transaction {
   hash: string;
@@ -12,18 +13,29 @@ interface Transaction {
   timestamp: number;
 }
 
+interface SwapTransaction extends SwapRecord {
+  type: 'swap' | 'receive';
+  direction: 'in' | 'out';
+}
+
 const Receive = () => {
   const { account, isConnected } = useWallet();
   const [balance, setBalance] = useState('0.000000');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [swapTransactions, setSwapTransactions] = useState<SwapTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [contractConnected, setContractConnected] = useState(false);
 
   const fetchData = async () => {
     if (!account) return;
     
     setIsLoading(true);
     try {
+      // Check contract connection
+      const connectionStatus = frontendContractService.getConnectionStatus();
+      setContractConnected(connectionStatus.isConnected);
+      
       const [balanceResult, txResult] = await Promise.all([
         getUSDTBalance(account),
         getRecentTransactions(account)
@@ -31,6 +43,27 @@ const Receive = () => {
       
       setBalance(balanceResult.toFixed(6));
       setTransactions(txResult);
+      
+      // Fetch swap transactions if contract is connected
+      if (connectionStatus.isConnected) {
+        try {
+          const swapHistory = await frontendContractService.getUserSwapHistory(account);
+          const recentSwaps = await frontendContractService.getRecentSwaps();
+          
+          // Combine and format swap transactions
+          const allSwaps = [...swapHistory, ...recentSwaps];
+          const swapTxs: SwapTransaction[] = allSwaps.map(swap => ({
+            ...swap,
+            type: 'swap',
+            direction: swap.user.toLowerCase() === account.toLowerCase() ? 'out' : 'in'
+          }));
+          
+          setSwapTransactions(swapTxs);
+        } catch (swapError) {
+          console.warn('Failed to fetch swap transactions:', swapError);
+          // Keep existing swap transactions if fetch fails
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -53,6 +86,39 @@ const Receive = () => {
       return () => clearInterval(interval);
     }
   }, [isConnected, account]);
+
+  // Listen for swap events if contract is connected
+  useEffect(() => {
+    if (contractConnected && account) {
+      const handleSwapExecuted = (swap: SwapRecord) => {
+        console.log('🔄 [RECEIVE] New swap detected:', swap);
+        
+        // Add new swap to the list
+        const newSwap: SwapTransaction = {
+          ...swap,
+          type: 'swap',
+          direction: swap.user.toLowerCase() === account.toLowerCase() ? 'out' : 'in'
+        };
+        
+        setSwapTransactions(prev => {
+          // Check if swap already exists to avoid duplicates
+          const exists = prev.some(existing => existing.txHash === swap.txHash);
+          if (!exists) {
+            return [newSwap, ...prev];
+          }
+          return prev;
+        });
+      };
+
+      // Set up event listener
+      frontendContractService.onSwapExecuted(handleSwapExecuted);
+
+      // Cleanup
+      return () => {
+        frontendContractService.removeAllListeners();
+      };
+    }
+  }, [contractConnected, account]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -119,13 +185,142 @@ const Receive = () => {
                 </div>
               </div>
             </div>
+
+            {/* Swap Summary */}
+            {contractConnected && swapTransactions.length > 0 && (
+              <div className="mt-6 grid md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4">
+                  <div className="text-sm font-medium text-gray-600">Total Swaps</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {swapTransactions.length}
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-4">
+                  <div className="text-sm font-medium text-gray-600">Sent Amount</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    -${swapTransactions
+                      .filter(tx => tx.direction === 'out')
+                      .reduce((sum, tx) => sum + parseFloat(tx.toAmount), 0)
+                      .toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4">
+                  <div className="text-sm font-medium text-gray-600">Received Amount</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    +${swapTransactions
+                      .filter(tx => tx.direction === 'in')
+                      .reduce((sum, tx) => sum + parseFloat(tx.toAmount), 0)
+                      .toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Transaction History */}
+          {/* Contract Status */}
+          {isConnected && (
+            <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${contractConnected ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                  <span className="text-lg font-semibold text-gray-900">
+                    Contract Status
+                  </span>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  contractConnected 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-orange-100 text-orange-800'
+                }`}>
+                  {contractConnected ? 'Connected' : 'Mock Mode'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Swap Transactions */}
+          {contractConnected && swapTransactions.length > 0 && (
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+              <div className="p-8 border-b border-gray-100">
+                <h2 className="text-2xl font-semibold text-gray-900">USDT Swap Transactions</h2>
+                <p className="text-gray-600 mt-2">Your USDT to Fiat swap history</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        From Currency
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        To Currency
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {swapTransactions.map((swap, index) => (
+                      <tr key={`${swap.txHash}-${index}`} className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            {swap.direction === 'out' ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            )}
+                            <span className="text-sm font-medium text-gray-900">
+                              {swap.direction === 'out' ? 'Sent' : 'Received'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {swap.fromCurrency}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {swap.toCurrency}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-green-600">
+                            {swap.direction === 'out' ? '-' : '+'}${parseFloat(swap.toAmount).toFixed(6)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(Number(swap.timestamp) * 1000).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Completed
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Regular Transaction History */}
           <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-100">
-              <h2 className="text-2xl font-semibold text-gray-900">Recent Transactions</h2>
-              <p className="text-gray-600 mt-2">Your latest USDT transactions</p>
+              <h2 className="text-2xl font-semibold text-gray-900">USDT Transactions</h2>
+              <p className="text-gray-600 mt-2">Your latest USDT blockchain transactions</p>
             </div>
 
             {transactions.length === 0 ? (

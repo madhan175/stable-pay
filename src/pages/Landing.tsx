@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Send, Wallet, Shield, Zap, Globe, CreditCard, Smartphone, Lock, CheckCircle, Star, Users, TrendingUp } from 'lucide-react';
+import { ArrowRight, Send, Wallet, Shield, Zap, Globe, CreditCard, Smartphone, Lock, CheckCircle, Star, Users, TrendingUp, Phone } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
+import { useKYC } from '../context/KYCContext';
 import WalletConnect from '../components/WalletConnect';
+import PhoneOTPModal from '../components/PhoneOTPModal';
 
 const Landing = () => {
   const { isConnected, account } = useWallet();
+  const { user } = useKYC();
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   return (
     <div className="relative">
@@ -31,8 +35,33 @@ const Landing = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            {!isConnected ? (
+            {!user ? (
+              <div className="flex flex-col items-center space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
+                  <Phone className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Get Started with StablePay
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Verify your phone number to start accepting payments
+                  </p>
+                  <button
+                    onClick={() => setShowPhoneModal(true)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+                  >
+                    <Phone className="w-5 h-5" />
+                    <span>Verify Phone Number</span>
+                  </button>
+                </div>
+              </div>
+            ) : !isConnected ? (
               <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center space-x-3 mb-4">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-green-800 font-medium">
+                    Phone Verified: {user.phone}
+                  </span>
+                </div>
                 <WalletConnect />
                 <div className="text-sm text-gray-500">or</div>
                 <Link
@@ -51,6 +80,12 @@ const Landing = () => {
                   <Wallet className="w-5 h-5 text-green-600" />
                   <span className="text-green-800 font-medium">
                     Connected: {account?.slice(0, 6)}...{account?.slice(-4)}
+                  </span>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center space-x-3">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <span className="text-blue-800 font-medium">
+                    Phone: {user.phone} | KYC: {user.kyc_status}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -159,7 +194,22 @@ const Landing = () => {
             </div>
           </div>
           
-          {!isConnected && (
+          {!user && (
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-3">Verify your phone number to try live demo</p>
+                <button
+                  onClick={() => setShowPhoneModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Verify Phone</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {user && !isConnected && (
             <div className="p-4 bg-gray-50 border-t border-gray-200">
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-3">Connect your wallet to try live demo</p>
@@ -434,6 +484,16 @@ const Landing = () => {
           </div>
         </div>
       </div>
+
+      {/* Phone OTP Modal */}
+      <PhoneOTPModal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        onSuccess={() => {
+          setShowPhoneModal(false);
+          // Optionally refresh the page or update state
+        }}
+      />
     </div>
   );
 };

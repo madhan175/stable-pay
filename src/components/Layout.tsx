@@ -1,6 +1,6 @@
-import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Coins, ArrowLeftRight, Wallet } from 'lucide-react';
+import WalletConnect from './WalletConnect';
 
 const Layout = () => {
   const location = useLocation();
@@ -43,6 +43,8 @@ const Layout = () => {
                 <Wallet className="w-4 h-4" />
                 <span>Receive</span>
               </Link>
+              
+              <WalletConnect />
             </div>
           </div>
         </div>
