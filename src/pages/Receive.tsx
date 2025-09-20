@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wallet, RefreshCw, ExternalLink, Copy, Check } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
-import { getUSDTBalance, getRecentTransactions } from '../utils/blockchain';
+import { getUSDTBalance, getUserSwapHistory, switchToSepolia } from '../utils/blockchain';
 
 interface Transaction {
   hash: string;
@@ -24,13 +24,29 @@ const Receive = () => {
     
     setIsLoading(true);
     try {
+      // Ensure we're on Sepolia
+      await switchToSepolia();
+      
       const [balanceResult, txResult] = await Promise.all([
         getUSDTBalance(account),
-        getRecentTransactions(account)
+        getUserSwapHistory(account)
       ]);
       
-      setBalance(balanceResult.toFixed(6));
-      setTransactions(txResult);
+      setBalance(balanceResult.toString());
+      
+      // Convert swap history to transaction format
+      const formattedTxs = txResult.map(swap => ({
+        hash: swap.txHash,
+        from: swap.user,
+        to: account,
+        value: swap.toAmount,
+        timestamp: swap.timestamp,
+        fromCurrency: swap.fromCurrency,
+        toCurrency: swap.toCurrency,
+        gstAmount: swap.gstAmount
+      }));
+      
+      setTransactions(formattedTxs);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -139,13 +155,16 @@ const Receive = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Transaction
+                        Swap Details
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        From
+                        Currencies
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        GST
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date
@@ -160,25 +179,35 @@ const Receive = () => {
                       <tr key={tx.hash} className="hover:bg-gray-50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-mono text-gray-900">
-                            {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
+                            {typeof tx.hash === 'string' ? 
+                              `${tx.hash.slice(0, 10)}...${tx.hash.slice(-8)}` : 
+                              'N/A'
+                            }
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-mono text-gray-500">
-                            {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
+                          <div className="text-sm text-gray-900">
+                            <div className="font-semibold">
+                              {tx.fromCurrency || 'INR'} → {tx.toCurrency || 'USDT'}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-green-600">
-                            +${parseFloat(tx.value).toFixed(6)} USDT
+                            +${parseFloat(tx.value || '0').toFixed(6)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-orange-600">
+                            ${parseFloat(tx.gstAmount || '0').toFixed(6)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(tx.timestamp * 1000).toLocaleDateString()}
+                          {new Date((tx.timestamp || 0) * 1000).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <a
-                            href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
+                            href={`https://sepolia.etherscan.io/tx/${tx.hash || ''}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-700 flex items-center space-x-1"

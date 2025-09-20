@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Wallet, RefreshCw, CheckCircle, XCircle, Loader, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Wallet, RefreshCw, CheckCircle, XCircle, Loader, AlertTriangle, Info } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import WalletConnect from '../components/WalletConnect';
-import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
+import { convertINRToUSDT, swapUSDTToFiat, switchToSepolia, getGSTRate } from '../utils/blockchain';
 import { supabase } from '../lib/supabase';
 
 const Send = () => {
@@ -12,7 +12,11 @@ const Send = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [inrAmount, setInrAmount] = useState('');
-  const [usdtAmount, setUsdtAmount] = useState('');
+  const [conversionData, setConversionData] = useState<{
+    usdtAmount: number;
+    gstAmount: number;
+    totalCost: number;
+  } | null>(null);
   const [merchantAddress, setMerchantAddress] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -20,18 +24,20 @@ const Send = () => {
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [requiresKYC, setRequiresKYC] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
+  const [gstRate, setGstRate] = useState(18);
 
   const handleConvert = async () => {
     if (!inrAmount) return;
     
     setIsConverting(true);
     setRequiresKYC(false);
+    setConversionData(null);
     try {
-      const converted = await convertINRToUSDT(parseFloat(inrAmount));
-      setUsdtAmount(converted.toFixed(6));
+      const result = await convertINRToUSDT(parseFloat(inrAmount));
+      setConversionData(result);
       
       // Check if KYC is required (>$200 USD)
-      if (converted > 200) {
+      if (result.usdtAmount > 200) {
         setRequiresKYC(true);
       }
     } catch (error) {
@@ -42,12 +48,21 @@ const Send = () => {
   };
 
   const handleSend = async () => {
-    if (!isConnected || !usdtAmount || !merchantAddress || !user) return;
+    if (!isConnected || !conversionData || !merchantAddress || !user) return;
     
     // Check KYC requirements
-    const amountUSD = parseFloat(usdtAmount);
+    const amountUSD = conversionData.usdtAmount;
     if (amountUSD > 200 && (!user.phone_verified || user.kyc_status !== 'verified')) {
       setShowKYCModal(true);
+      return;
+    }
+    
+    try {
+      // Switch to Sepolia network
+      await switchToSepolia();
+    } catch (error) {
+      console.error('Failed to switch to Sepolia:', error);
+      setTxStatus('error');
       return;
     }
     
@@ -62,8 +77,10 @@ const Send = () => {
           user_id: user.id,
           recipient_wallet: merchantAddress,
           amount_inr: parseFloat(inrAmount),
-          amount_usd: amountUSD,
+          amount_usd: conversionData.usdtAmount,
+          amount_usdt: conversionData.usdtAmount,
           requires_kyc: amountUSD > 200,
+          kyc_verified: user.kyc_status === 'verified',
           status: 'pending'
         })
         .select()
@@ -71,7 +88,8 @@ const Send = () => {
 
       if (txError) throw txError;
 
-      const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
+      // Execute the swap from USDT to INR (reverse direction for demo)
+      const hash = await swapUSDTToFiat('INR', conversionData.usdtAmount);
       
       // Update transaction with hash
       await supabase
@@ -103,10 +121,22 @@ const Send = () => {
       }, 500);
       return () => clearTimeout(timer);
     } else {
-      setUsdtAmount('');
+      setConversionData(null);
     }
   }, [inrAmount]);
 
+  useEffect(() => {
+    const fetchGSTRate = async () => {
+      try {
+        const rate = await getGSTRate();
+        setGstRate(rate);
+      } catch (error) {
+        console.error('Error fetching GST rate:', error);
+      }
+    };
+    
+    fetchGSTRate();
+  }, []);
   // Show login prompt if not authenticated
   if (!user) {
     return (
@@ -171,7 +201,7 @@ const Send = () => {
         </div>
 
         {/* Conversion Arrow */}
-        {inrAmount && (
+        {inrAmount && conversionData && (
           <div className="flex justify-center mb-8">
             <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-full">
               <ArrowRight className="w-6 h-6 text-white transform rotate-90" />
@@ -180,24 +210,55 @@ const Send = () => {
         )}
 
         {/* USDT Output */}
-        {usdtAmount && (
-          <div className="mb-8">
+        {conversionData && (
+          <div className="mb-8 space-y-4">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Equivalent USDT
+              Conversion Details
             </label>
-            <div className="relative">
-              <span className="absolute left-4 top-4 text-gray-500 font-medium">$</span>
-              <input
-                type="text"
-                value={usdtAmount}
-                readOnly
-                className={`w-full pl-8 pr-12 py-4 text-xl font-semibold bg-gray-50 border-2 rounded-2xl ${
-                  requiresKYC ? 'border-yellow-400' : 'border-gray-200'
-                }`}
-              />
+            
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">USDT Amount:</span>
+                <span className="text-xl font-bold text-gray-900">
+                  ${conversionData.usdtAmount.toFixed(6)}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">GST ({gstRate}%):</span>
+                <span className="text-lg font-semibold text-orange-600">
+                  ${conversionData.gstAmount.toFixed(6)}
+                </span>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-800 font-semibold">Total Cost:</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${conversionData.totalCost.toFixed(6)}
+                  </span>
+                </div>
+              </div>
+              
               {isConverting && (
-                <RefreshCw className="absolute right-4 top-4 w-6 h-6 text-blue-500 animate-spin" />
+                <div className="flex items-center justify-center pt-2">
+                  <RefreshCw className="w-5 h-5 text-blue-500 animate-spin mr-2" />
+                  <span className="text-sm text-blue-600">Updating rates...</span>
+                </div>
               )}
+            </div>
+            
+            {/* Network Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-start space-x-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-800">Sepolia Testnet</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    This transaction will be executed on Sepolia testnet. Make sure your MetaMask is connected to Sepolia.
+                  </p>
+                </div>
+              </div>
             </div>
             
             {/* KYC Warning */}
@@ -258,17 +319,17 @@ const Send = () => {
             {/* Send Button */}
             <button
               onClick={handleSend}
-              disabled={!usdtAmount || !merchantAddress || isSending}
+              disabled={!conversionData || !merchantAddress || isSending}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2"
             >
               {isSending ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  <span>Sending...</span>
+                  <span>Processing Swap...</span>
                 </>
               ) : (
                 <>
-                  <span>Send USDT</span>
+                  <span>Execute Swap</span>
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -295,12 +356,25 @@ const Send = () => {
                 <div className="flex items-center space-x-2 mb-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <span className="text-sm font-medium text-green-800">
-                    Transaction successful!
+                    Swap executed successfully!
                   </span>
                 </div>
-                <p className="text-xs text-green-700 break-all">
-                  TX: {txHash}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-green-700">
+                    <strong>Transaction Hash:</strong>
+                  </p>
+                  <p className="text-xs text-green-700 break-all font-mono">
+                    {txHash}
+                  </p>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:text-blue-700 underline"
+                  >
+                    View on Sepolia Etherscan →
+                  </a>
+                </div>
               </div>
             )}
             
@@ -309,7 +383,7 @@ const Send = () => {
                 <div className="flex items-center space-x-2">
                   <XCircle className="w-5 h-5 text-red-600" />
                   <span className="text-sm font-medium text-red-800">
-                    Transaction failed. Please try again.
+                    Swap failed. Please ensure you're on Sepolia testnet and try again.
                   </span>
                 </div>
               </div>
