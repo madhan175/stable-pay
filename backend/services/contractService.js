@@ -1,8 +1,8 @@
 const { ethers } = require('ethers');
 
 // Contract configuration
-const CONTRACT_ADDRESS = '0x44D5AceaB446F335853EEDebdcbE6fFD94d7d51C';
-const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // Mainnet USDT
+const CONTRACT_ADDRESS = ' 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+const USDT_ADDRESS = '0x1234567890123456789012345678901234567890'; // Mainnet USDT
 
 // Contract ABI (same as frontend)
 const CONTRACT_ABI = [

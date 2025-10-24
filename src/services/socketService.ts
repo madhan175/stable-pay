@@ -1,12 +1,24 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
+
+interface KYCUpdateData {
+  userId: string;
+  status: 'pending' | 'verified' | 'rejected';
+  message?: string;
+  timestamp: string;
+}
+
+type EventCallback = (data: any) => void;
 
 class SocketService {
+  private socket: Socket | null = null;
+  private listeners: Map<string, Set<EventCallback>> = new Map();
+
   constructor() {
     this.socket = null;
     this.listeners = new Map();
   }
 
-  connect() {
+  connect(): Socket | null {
     if (this.socket?.connected) {
       return this.socket;
     }
@@ -17,73 +29,85 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to KYC socket server');
+      console.log('🔗 [SOCKET] Connected to KYC socket server');
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from KYC socket server');
+      console.log('🔌 [SOCKET] Disconnected from KYC socket server');
     });
 
-    this.socket.on('kyc_update', (data) => {
-      console.log('KYC Update received:', data);
+    this.socket.on('kyc_update', (data: KYCUpdateData) => {
+      console.log('🔔 [SOCKET] KYC Update received:', data);
       this.emitToListeners('kyc_update', data);
     });
 
     return this.socket;
   }
 
-  disconnect() {
+  disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
     }
   }
 
-  joinKYCRoom(userId) {
+  joinKYCRoom(userId: string): void {
     if (this.socket) {
       this.socket.emit('join_kyc_room', userId);
+      console.log('🏠 [SOCKET] Joined KYC room for user:', userId);
     }
   }
 
-  leaveKYCRoom(userId) {
+  leaveKYCRoom(userId: string): void {
     if (this.socket) {
       this.socket.emit('leave_kyc_room', userId);
+      console.log('🚪 [SOCKET] Left KYC room for user:', userId);
     }
   }
 
   // Event listener management
-  addListener(event, callback) {
+  addListener(event: string, callback: EventCallback): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
-    this.listeners.get(event).add(callback);
+    this.listeners.get(event)!.add(callback);
   }
 
-  removeListener(event, callback) {
+  removeListener(event: string, callback: EventCallback): void {
     if (this.listeners.has(event)) {
-      this.listeners.get(event).delete(callback);
+      this.listeners.get(event)!.delete(callback);
     }
   }
 
-  emitToListeners(event, data) {
+  emitToListeners(event: string, data: any): void {
     if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach(callback => {
+      this.listeners.get(event)!.forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error('Error in socket listener:', error);
+          console.error('❌ [SOCKET] Error in socket listener:', error);
         }
       });
     }
   }
 
   // KYC specific methods
-  onKYCUpdate(callback) {
+  onKYCUpdate(callback: (data: KYCUpdateData) => void): void {
     this.addListener('kyc_update', callback);
   }
 
-  offKYCUpdate(callback) {
+  offKYCUpdate(callback: (data: KYCUpdateData) => void): void {
     this.removeListener('kyc_update', callback);
+  }
+
+  // Connection status
+  isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  // Get socket instance
+  getSocket(): Socket | null {
+    return this.socket;
   }
 }
 

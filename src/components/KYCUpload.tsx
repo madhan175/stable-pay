@@ -21,6 +21,7 @@ const KYCUpload: React.FC<KYCUploadProps> = ({ onKYCComplete }) => {
     
     // Simulate OCR extraction
     const mockOCRData = {
+      
       name: ' Dineshlingam',
       dob: '2005-10-06',
       id_number: 'ABCD1234E',

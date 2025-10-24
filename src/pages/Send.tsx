@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, Wallet, RefreshCw, CheckCircle, XCircle, Loader, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Wallet, RefreshCw, CheckCircle, XCircle, Loader, AlertTriangle, DollarSign } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../context/WalletContext';
 import { useKYC } from '../context/KYCContext';
 import WalletConnect from '../components/WalletConnect';
 import PhoneOTPModal from '../components/PhoneOTPModal';
 import KYCModal from '../components/KYCModal';
+import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 
@@ -14,6 +15,7 @@ const Send = () => {
   const { user, createTransaction, isLoading: kycLoading } = useKYC();
   const [inrAmount, setInrAmount] = useState('');
   const [usdtAmount, setUsdtAmount] = useState('');
+  const [usdAmount, setUsdAmount] = useState('');
   const [merchantAddress, setMerchantAddress] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -97,10 +99,13 @@ const Send = () => {
     
     setIsConverting(true);
     try {
+      let usdtValue = 0;
+      
       if (contractConnected) {
         // Use contract for conversion
         const result = await frontendContractService.calculateSwap('INR', 'USDT', inrAmount);
-        setUsdtAmount(parseFloat(result.toAmount).toFixed(6));
+        usdtValue = parseFloat(result.toAmount);
+        setUsdtAmount(usdtValue.toFixed(6));
         console.log('💰 [CONTRACT] Conversion with GST:', {
           fromAmount: inrAmount,
           toAmount: result.toAmount,
@@ -110,8 +115,12 @@ const Send = () => {
       } else {
         // Fallback to mock conversion
         const converted = await convertINRToUSDT(parseFloat(inrAmount));
+        usdtValue = converted;
         setUsdtAmount(converted.toFixed(6));
       }
+      
+      // Set USD amount (USDT is pegged to USD)
+      setUsdAmount(usdtValue.toFixed(2));
     } catch (error) {
       console.error('Conversion error:', error);
     } finally {
@@ -239,6 +248,11 @@ const Send = () => {
       </div>
 
       <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
+        {/* Currency Rates */}
+        <div className="mb-6">
+          <CurrencyRateDisplay />
+        </div>
+        
         {/* INR Input */}
         <div className="mb-8">
           <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -283,6 +297,22 @@ const Send = () => {
                 <RefreshCw className="absolute right-4 top-4 w-6 h-6 text-blue-500 animate-spin" />
               )}
             </div>
+            
+            {/* USD Value Display */}
+            {usdAmount && (
+              <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Current USD Value:</span>
+                </div>
+                <div className="text-lg font-semibold text-green-900 mt-1">
+                  ${usdAmount} USD
+                </div>
+                <div className="text-xs text-green-600 mt-1">
+                  USDT is pegged to USD (1:1 ratio)
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -436,8 +466,8 @@ const Send = () => {
               </div>
               
               {contractConnected && (
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>Contract: 0x44D5...d51C</div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div>Contract: {frontendContractService.getConnectionStatus().contractAddress || 'Not configured'}</div>
                   <div>GST Rate: {gstRate}%</div>
                   <div>INR Rate: {currencyRates.INR || 'Loading...'}</div>
                   <div>USDT Rate: {currencyRates.USDT || 'Loading...'}</div>

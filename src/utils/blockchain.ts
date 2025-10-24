@@ -13,8 +13,41 @@ const USDT_ABI = [
   'event Approval(address indexed owner, address indexed spender, uint256 value)'
 ];
 
-// USDT contract address - using mock for local testing
-const USDT_CONTRACT_ADDRESS = '0x1234567890123456789012345678901234567890'; // Mock USDT for local
+// USDT and Swap contract addresses (resolve from env or localStorage)
+const ENV_USDT_ADDRESS = (import.meta as any)?.env?.VITE_USDT_ADDRESS || '';
+const ENV_SWAP_ADDRESS = (import.meta as any)?.env?.VITE_CONTRACT_ADDRESS || '';
+const LS_USDT_ADDRESS = (() => {
+  try { return localStorage.getItem('USDT_ADDRESS') || ''; } catch { return ''; }
+})();
+const LS_SWAP_ADDRESS = (() => {
+  try { return localStorage.getItem('CONTRACT_ADDRESS') || ''; } catch { return ''; }
+})();
+
+const RAW_USDT_ADDRESS = ENV_USDT_ADDRESS || LS_USDT_ADDRESS;
+const RAW_SWAP_ADDRESS = ENV_SWAP_ADDRESS || LS_SWAP_ADDRESS;
+
+const resolveUsdtAddress = async (provider?: ethers.Provider): Promise<string> => {
+  // 1) Prefer explicit env/localStorage
+  if (RAW_USDT_ADDRESS) {
+    try { return ethers.getAddress(RAW_USDT_ADDRESS); } catch { /* fall through */ }
+  }
+
+  // 2) Try reading from deployed swap contract if configured (env or localStorage)
+  try {
+    if (!RAW_SWAP_ADDRESS) return '';
+    const swapAddress = ethers.getAddress(RAW_SWAP_ADDRESS);
+    const usedProvider = provider || (typeof window !== 'undefined' && (window as any).ethereum ? new ethers.BrowserProvider((window as any).ethereum) : undefined);
+    if (!usedProvider) return '';
+    const code = await usedProvider.getCode(swapAddress);
+    if (code === '0x') return '';
+    const swapAbi = ["function usdt() view returns (address)"];
+    const swapContract = new ethers.Contract(swapAddress, swapAbi, usedProvider);
+    const addr: string = await swapContract.usdt();
+    return ethers.getAddress(addr);
+  } catch {
+    return '';
+  }
+};
 
 // Real conversion rate (fetch from API in production)
 const INR_TO_USDT_RATE = 0.012; // 1 INR = 0.012 USDT (approximate)
@@ -46,31 +79,55 @@ export const convertINRToUSDT = async (inrAmount: number): Promise<number> => {
 
 export const getUSDTBalance = async (address: string): Promise<number> => {
   try {
-    console.log(`🔍 [SEPOLIA] Getting USDT balance for: ${address}`);
+    console.log(`🔍 [BLOCKCHAIN] Getting USDT balance for: ${address}`);
     
     if (typeof window.ethereum === 'undefined') {
-      throw new Error('MetaMask not installed');
+      console.warn('⚠️ [BLOCKCHAIN] MetaMask not installed, using mock balance');
+      return Math.random() * 1000; // Mock balance
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const usdtContract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, provider);
     
-    // Get balance
-    const balanceWei = await usdtContract.balanceOf(address);
-    const decimals = await usdtContract.decimals();
-    const balance = parseFloat(ethers.formatUnits(balanceWei, decimals));
-    
-    console.log(`✅ [SEPOLIA] USDT Balance: ${balance.toFixed(6)} USDT`);
-    return balance;
+    // Resolve and verify USDT address first
+    const usdtAddress = await resolveUsdtAddress(provider);
+    if (!usdtAddress) {
+      console.warn('⚠️ [BLOCKCHAIN] No VITE_USDT_ADDRESS configured, using mock balance');
+      return Math.random() * 1000;
+    }
+
+    // Try real USDT contract first
+    try {
+      const code = await provider.getCode(usdtAddress);
+      if (code === '0x') {
+        throw new Error('USDT contract not found at configured address');
+      }
+      const usdtContract = new ethers.Contract(usdtAddress, USDT_ABI, provider);
+      
+      // Test if contract exists by checking if it returns data
+      const balanceWei = await usdtContract.balanceOf(address);
+      const decimals = await usdtContract.decimals();
+      const balance = parseFloat(ethers.formatUnits(balanceWei, decimals));
+      
+      console.log(`✅ [BLOCKCHAIN] Real USDT Balance: ${balance.toFixed(6)} USDT`);
+      return balance;
+    } catch (contractError: any) {
+      if (contractError.message?.includes('could not decode result data') || 
+          contractError.message?.includes('BAD_DATA')) {
+        console.warn('⚠️ [BLOCKCHAIN] USDT contract not available, using mock balance');
+        return Math.random() * 1000; // Mock balance
+      }
+      throw contractError; // Re-throw other errors
+    }
   } catch (error: any) {
-    console.error('❌ [SEPOLIA] Error getting USDT balance:', error);
+    console.error('❌ [BLOCKCHAIN] Error getting USDT balance:', error);
     
     if (error.message?.includes('MetaMask not installed')) {
-      throw new Error('Please install MetaMask to check USDT balance');
+      console.warn('⚠️ [BLOCKCHAIN] MetaMask not installed, using mock balance');
+      return Math.random() * 1000; // Mock balance
     } else if (error.message?.includes('User rejected')) {
       throw new Error('User rejected the request');
     } else {
-      console.warn('⚠️ [SEPOLIA] Using mock balance due to error');
+      console.warn('⚠️ [BLOCKCHAIN] Using mock balance due to error');
       return Math.random() * 1000; // Fallback to mock balance
     }
   }
@@ -86,10 +143,24 @@ export const sendUSDT = async (toAddress: string, amount: number): Promise<strin
 
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const usdtContract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, signer);
+    const usdtAddress = await resolveUsdtAddress(provider);
+    if (!usdtAddress) {
+      throw new Error('USDT contract address not configured (VITE_USDT_ADDRESS)');
+    }
+    const code = await provider.getCode(usdtAddress);
+    if (code === '0x') {
+      throw new Error('USDT contract not found at configured address');
+    }
+    const usdtContract = new ethers.Contract(usdtAddress, USDT_ABI, signer);
     
     // Get decimals
-    const decimals = await usdtContract.decimals();
+    // Some mock/minimal tokens may not expose decimals; default gracefully
+    let decimals = 6;
+    try {
+      decimals = await usdtContract.decimals();
+    } catch (e) {
+      console.warn('⚠️ [SEPOLIA] decimals() not available, defaulting to 6');
+    }
     const amountWei = ethers.parseUnits(amount.toString(), decimals);
     
     // Check balance

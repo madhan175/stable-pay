@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Wallet, RefreshCw, ExternalLink, Copy, Check, TrendingUp, TrendingDown } from 'lucide-react';
+import { Wallet, RefreshCw, ExternalLink, Copy, Check, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
-import { getUSDTBalance, getRecentTransactions } from '../utils/blockchain';
+import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
+import { getUSDTBalance } from '../utils/blockchain';
+import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 
 interface Transaction {
   hash: string;
@@ -10,21 +12,33 @@ interface Transaction {
   to: string;
   value: string;
   timestamp: number;
+  fromCurrency?: string;
+  toCurrency?: string;
+  gstAmount?: string;
 }
 
-interface SwapTransaction extends SwapRecord {
+interface SwapTransaction {
   type: 'swap' | 'receive';
   direction: 'in' | 'out';
+  user: string;
+  fromCurrency: string;
+  toCurrency: string;
+  fromAmount: string;
+  toAmount: string;
+  gstAmount: string;
+  timestamp: string;
+  txHash: string;
 }
 
 const Receive = () => {
   const { account, isConnected } = useWallet();
   const [balance, setBalance] = useState('0.000000');
+  const [usdBalance, setUsdBalance] = useState('0.00');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [swapTransactions, setSwapTransactions] = useState<SwapTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [contractConnected, setContractConnected] = useState(false);
+  const [contractConnected] = useState(false);
 
   const fetchData = async () => {
     if (!account) return;
@@ -33,11 +47,26 @@ const Receive = () => {
     try {
       const [balanceResult, txResult] = await Promise.all([
         getUSDTBalance(account),
-        getUserSwapHistory(account)
+        frontendContractService.getUserSwapHistory(account)
       ]);
       
       setBalance(balanceResult.toFixed(6));
-      setTransactions(txResult);
+      // Set USD balance (USDT is pegged to USD)
+      setUsdBalance(balanceResult.toFixed(2));
+      
+      // Convert SwapRecord[] to Transaction[] format
+      const formattedTransactions: Transaction[] = txResult.map((swap: SwapRecord) => ({
+        hash: swap.txHash,
+        from: swap.user,
+        to: 'Contract',
+        value: swap.toAmount.toString(),
+        timestamp: Number(swap.timestamp),
+        fromCurrency: swap.fromCurrency,
+        toCurrency: swap.toCurrency,
+        gstAmount: swap.gstAmount.toString()
+      }));
+      
+      setTransactions(formattedTransactions);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -69,7 +98,14 @@ const Receive = () => {
         
         // Add new swap to the list
         const newSwap: SwapTransaction = {
-          ...swap,
+          user: swap.user,
+          fromCurrency: swap.fromCurrency,
+          toCurrency: swap.toCurrency,
+          fromAmount: swap.fromAmount.toString(),
+          toAmount: swap.toAmount.toString(),
+          gstAmount: swap.gstAmount.toString(),
+          timestamp: swap.timestamp.toString(),
+          txHash: swap.txHash,
           type: 'swap',
           direction: swap.user.toLowerCase() === account.toLowerCase() ? 'out' : 'in'
         };
@@ -120,6 +156,11 @@ const Receive = () => {
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Currency Rates */}
+          <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-100">
+            <CurrencyRateDisplay />
+          </div>
+          
           {/* Wallet Info */}
           <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -156,6 +197,20 @@ const Receive = () => {
                     ${balance}
                   </span>
                   <span className="text-sm text-gray-500">USDT</span>
+                </div>
+                
+                {/* USD Value Display */}
+                <div className="mt-3 bg-green-100 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">USD Value:</span>
+                  </div>
+                  <div className="text-lg font-semibold text-green-900 mt-1">
+                    ${usdBalance} USD
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    USDT is pegged to USD (1:1 ratio)
+                  </div>
                 </div>
               </div>
             </div>

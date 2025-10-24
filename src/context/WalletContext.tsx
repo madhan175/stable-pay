@@ -9,7 +9,7 @@ interface WalletContextType {
   disconnect: () => void;
 }
 
-const WalletContext = createContext<WalletContextType | null>(null);
+export const WalletContext = createContext<WalletContextType | null>(null);
 
 export const useWallet = () => {
   const context = useContext(WalletContext);
@@ -103,12 +103,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     // Check if already connected
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum) {
       const checkConnection = async () => {
         try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          const accounts = await window.ethereum!.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum!);
             const network = await provider.getNetwork();
             
             console.log('🔍 [METAMASK] Checking existing connection...');
@@ -150,13 +150,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       };
 
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
+      // Add event listeners with proper typing
+      (window.ethereum as any).on('accountsChanged', handleAccountsChanged);
+      (window.ethereum as any).on('chainChanged', handleChainChanged);
 
       return () => {
-        if (window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          window.ethereum.removeListener('chainChanged', handleChainChanged);
+        if (window.ethereum && (window.ethereum as any).removeListener) {
+          (window.ethereum as any).removeListener('accountsChanged', handleAccountsChanged);
+          (window.ethereum as any).removeListener('chainChanged', handleChainChanged);
         }
       };
     }

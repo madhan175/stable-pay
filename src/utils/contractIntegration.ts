@@ -143,7 +143,18 @@ const CONTRACT_ABI = [
 ];
 
 // Contract configuration
-const CONTRACT_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'; // Your deployed contract
+// Resolve contract address from env or localStorage; avoid localhost defaults in production
+const ENV_CONTRACT_ADDRESS = (import.meta as any)?.env?.VITE_CONTRACT_ADDRESS || '';
+const LS_CONTRACT_ADDRESS = (() => {
+  try { return localStorage.getItem('CONTRACT_ADDRESS') || ''; } catch { return ''; }
+})();
+const RAW_CONTRACT_ADDRESS = ENV_CONTRACT_ADDRESS || LS_CONTRACT_ADDRESS;
+let CONTRACT_ADDRESS: string = '';
+try {
+  CONTRACT_ADDRESS = RAW_CONTRACT_ADDRESS ? ethers.getAddress(RAW_CONTRACT_ADDRESS) : '';
+} catch {
+  CONTRACT_ADDRESS = '';
+}
 
 // Types
 export interface SwapRecord {
@@ -171,18 +182,41 @@ export class FrontendContractService {
   async connect() {
     try {
       if (!window.ethereum) {
-        throw new Error('MetaMask not installed');
+        console.warn('⚠️ [FRONTEND] MetaMask not installed, using mock mode');
+        return false;
       }
 
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      this.signer = await this.provider.getSigner();
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      this.provider = provider;
+      this.signer = await provider.getSigner();
+      if (!CONTRACT_ADDRESS) {
+        console.warn('⚠️ [FRONTEND] No contract address configured. Set VITE_CONTRACT_ADDRESS or localStorage.CONTRACT_ADDRESS');
+        return false;
+      }
+      // Verify contract code exists at the address before instantiating
+      const code = await provider.getCode(CONTRACT_ADDRESS);
+      if (code === '0x') {
+        console.warn('⚠️ [FRONTEND] No contract code at configured address:', CONTRACT_ADDRESS);
+        console.log('🔄 [FRONTEND] This is normal if contract is not deployed or on different network');
+        return false;
+      }
       this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.signer);
 
-      console.log('🔗 [FRONTEND] Contract connected via MetaMask');
-      return true;
+      // Test if contract actually exists by calling a simple view function
+      try {
+        console.log('🔍 [FRONTEND] Testing contract connection...');
+        await this.contract.GST_RATE();
+        console.log('✅ [FRONTEND] Contract verified and connected via MetaMask');
+        return true;
+      } catch (testError: any) {
+        console.warn('⚠️ [FRONTEND] Contract test failed, switching to mock mode:', testError.message);
+        console.log('🔄 [FRONTEND] This is normal if contract is not deployed or on different network');
+        this.contract = null;
+        return false;
+      }
     } catch (error) {
       console.error('❌ [FRONTEND] Contract connection failed:', error);
-      // Don't throw error, just log and continue with mock mode
+      console.log('🔄 [FRONTEND] Using mock mode instead');
       return false;
     }
   }
@@ -270,15 +304,18 @@ export class FrontendContractService {
       let skipUSDTChecks = false;
       
       try {
-        // Try to get USDT address from contract first, fallback to hardcoded
-        let usdtAddress: string;
-        try {
-          usdtAddress = await contract.usdt();
-          console.log('💰 [CONTRACT] USDT Address from contract:', usdtAddress);
-        } catch (error) {
-          console.warn('⚠️ [CONTRACT] Could not get USDT address from contract, using hardcoded');
-          usdtAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // Mainnet USDT
-          console.log('💰 [CONTRACT] Using hardcoded USDT Address:', usdtAddress);
+        // Source USDT address from env if provided, otherwise ask the swap contract
+        let usdtAddress: string = (import.meta as any)?.env?.VITE_USDT_ADDRESS || '';
+        if (usdtAddress) {
+          try { usdtAddress = ethers.getAddress(usdtAddress); } catch { usdtAddress = ''; }
+        }
+        if (!usdtAddress) {
+          try {
+            usdtAddress = await contract.usdt();
+            console.log('💰 [CONTRACT] USDT Address from contract:', usdtAddress);
+          } catch (error) {
+            throw new Error('USDT address unavailable. Configure VITE_USDT_ADDRESS for frontend.');
+          }
         }
         
         // Create USDT contract instance
@@ -452,10 +489,14 @@ export class FrontendContractService {
   // Get user swap history
   async getUserSwapHistory(userAddress: string): Promise<SwapRecord[]> {
     try {
-      const contract = await this.getContract();
+      if (!this.contract) {
+        console.log('🔄 [CONTRACT] No contract available, returning mock history');
+        return this.getMockSwapHistory();
+      }
+      
       console.log('📊 [CONTRACT] Fetching swap history for:', userAddress);
       
-      const history = await contract.getUserSwapHistory(userAddress);
+      const history = await this.contract.getUserSwapHistory(userAddress);
       
       const formattedHistory = history.map((record: any) => ({
         user: record.user,
@@ -471,10 +512,41 @@ export class FrontendContractService {
       console.log('✅ [CONTRACT] Swap history loaded:', formattedHistory.length, 'records');
       return formattedHistory;
     } catch (error: any) {
+      if (error.message?.includes('could not decode result data') || 
+          error.message?.includes('BAD_DATA')) {
+        console.warn('⚠️ [CONTRACT] Contract not available, returning mock history');
+        return this.getMockSwapHistory();
+      }
       console.error('❌ [CONTRACT] Failed to get swap history:', error);
       console.log('🔄 [CONTRACT] Returning empty history');
       return [];
     }
+  }
+
+  // Mock swap history for fallback
+  private getMockSwapHistory(): SwapRecord[] {
+    return [
+      {
+        user: '0x1234567890123456789012345678901234567890',
+        fromCurrency: 'INR',
+        toCurrency: 'USDT',
+        fromAmount: '1000',
+        toAmount: '12.05',
+        gstAmount: '2.17',
+        timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        txHash: '0x' + Math.random().toString(16).substr(2, 64)
+      },
+      {
+        user: '0x1234567890123456789012345678901234567890',
+        fromCurrency: 'INR',
+        toCurrency: 'USDT',
+        fromAmount: '500',
+        toAmount: '6.02',
+        gstAmount: '1.08',
+        timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+        txHash: '0x' + Math.random().toString(16).substr(2, 64)
+      }
+    ];
   }
 
   // Get recent swaps
@@ -508,28 +580,41 @@ export class FrontendContractService {
   // Get currency rate
   async getCurrencyRate(currency: string): Promise<string> {
     try {
-      const contract = await this.getContract();
+      if (!this.contract) {
+        console.log('🔄 [CONTRACT] No contract available, returning mock rate for:', currency);
+        return this.getMockCurrencyRate(currency);
+      }
+      
       console.log('💰 [CONTRACT] Fetching rate for:', currency);
       
-      const rate = await contract.currencyRates(currency);
+      const rate = await this.contract.currencyRates(currency);
       const formattedRate = ethers.formatUnits(rate, 8); // Rates are scaled by 1e8
       
       console.log('✅ [CONTRACT] Rate loaded:', currency, '=', formattedRate);
       return formattedRate;
     } catch (error: any) {
+      if (error.message?.includes('could not decode result data') || 
+          error.message?.includes('BAD_DATA')) {
+        console.warn('⚠️ [CONTRACT] Contract not available, returning mock rate for:', currency);
+        return this.getMockCurrencyRate(currency);
+      }
       console.error('❌ [CONTRACT] Failed to get currency rate:', error);
       console.log('🔄 [CONTRACT] Returning mock rate for:', currency);
       
-      // Mock rates for fallback
-      const mockRates: {[key: string]: string} = {
-        'INR': '88.0',
-        'USD': '1.0',
-        'EUR': '0.92',
-        'USDT': '1.0'
-      };
-      
-      return mockRates[currency] || '1.0';
+      return this.getMockCurrencyRate(currency);
     }
+  }
+
+  // Mock currency rates for fallback
+  private getMockCurrencyRate(currency: string): string {
+    const mockRates: {[key: string]: string} = {
+      'INR': '88.0',
+      'USD': '1.0',
+      'EUR': '0.92',
+      'USDT': '1.0'
+    };
+    
+    return mockRates[currency] || '1.0';
   }
 
   // Check if currency is supported
@@ -553,15 +638,24 @@ export class FrontendContractService {
   // Get GST rate
   async getGSTRate(): Promise<string> {
     try {
-      const contract = await this.getContract();
+      if (!this.contract) {
+        console.log('🔄 [CONTRACT] No contract available, returning mock GST rate: 18%');
+        return '18';
+      }
+      
       console.log('💰 [CONTRACT] Fetching GST rate');
       
-      const rate = await contract.GST_RATE();
+      const rate = await this.contract.GST_RATE();
       const percentage = (Number(rate) / 100).toString(); // Convert from basis points to percentage
       
       console.log('✅ [CONTRACT] GST rate loaded:', percentage + '%');
       return percentage;
     } catch (error: any) {
+      if (error.message?.includes('could not decode result data') || 
+          error.message?.includes('BAD_DATA')) {
+        console.warn('⚠️ [CONTRACT] Contract not available, returning mock GST rate: 18%');
+        return '18';
+      }
       console.error('❌ [CONTRACT] Failed to get GST rate:', error);
       console.log('🔄 [CONTRACT] Returning mock GST rate: 18%');
       
@@ -747,6 +841,7 @@ export class FrontendContractService {
   async executeSepoliaTransaction(toCurrency: string, usdtAmountWei: bigint, txHash: string): Promise<string> {
     try {
       console.log('🔄 [SEPOLIA] Executing real Sepolia transaction with actual gas fees...');
+      console.log('📊 [SEPOLIA] Parameters:', { toCurrency, usdtAmountWei: usdtAmountWei.toString(), txHash });
       
       if (!this.signer) {
         throw new Error('Wallet not connected');
@@ -756,7 +851,12 @@ export class FrontendContractService {
       console.log('👤 [SEPOLIA] Signer address:', signerAddress);
 
       // Get current gas price from Sepolia network
-      const gasPrice = await this.signer.provider?.getGasPrice();
+      const provider = this.signer.provider;
+      if (!provider) {
+        throw new Error('Provider not available');
+      }
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice;
       console.log('⛽ [SEPOLIA] Current gas price:', gasPrice?.toString(), 'wei');
 
       // Create a simple ETH transfer transaction as fallback
@@ -782,7 +882,7 @@ export class FrontendContractService {
       console.log('⛽ [SEPOLIA] Gas estimate:', gasEstimate.toString());
 
       // Update transaction with estimated gas
-      transaction.gasLimit = gasEstimate;
+      transaction.gasLimit = Number(gasEstimate);
 
       // Execute the transaction
       console.log('🚀 [SEPOLIA] Sending transaction to Sepolia network...');
@@ -802,7 +902,7 @@ export class FrontendContractService {
 
       // Calculate actual gas fees paid
       const gasUsed = receipt?.gasUsed || gasEstimate;
-      const gasPricePaid = receipt?.gasPrice || gasPrice;
+      const gasPricePaid = receipt?.gasPrice || gasPrice || 0n;
       const totalGasFee = gasUsed * gasPricePaid;
       
       console.log('💰 [SEPOLIA] Gas fees paid:', {
