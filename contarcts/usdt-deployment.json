@@ -1,0 +1,9 @@
+{
+  "usdtAddress": "0x61Ddf50869436D159090bBAC40f0fe7e4Ffcd4cD",
+  "network": "sepolia",
+  "chainId": "11155111",
+  "blockNumber": 9530531,
+  "timestamp": "2025-10-31T14:10:39.234Z",
+  "deployer": "0x5De853eA28F8a851677C3A158DB617ea726b2B7D",
+  "note": "MockUSDT for P2P transfers on Sepolia testnet"
+}

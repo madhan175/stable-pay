@@ -51,7 +51,7 @@ VITE_USDT_ADDRESS=0xYourDeployedUSDTAddressHere
 Update `src/config/contracts.ts`:
 ```typescript
 export const CONTRACT_ADDRESSES = {
-  swap: '0x39d886A94568EaDa1e08e4005186F3fff2eE84f9',
+  swap: '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4',
   usdt: '0xYourDeployedUSDTAddressHere', // ← Update this
 };
 ```
@@ -60,7 +60,7 @@ export const CONTRACT_ADDRESSES = {
 Update `contarcts/deployment.json`:
 ```json
 {
-  "contractAddress": "0x39d886A94568EaDa1e08e4005186F3fff2eE84f9",
+  "contractAddress": "0xA59CE17F2ea6946F48386B4bD7884512AeC674F4",
   "usdtAddress": "0xYourDeployedUSDTAddressHere",
   ...
 }
@@ -114,7 +114,7 @@ Check your transactions on:
 ## Contract Addresses Reference
 
 After deployment, your setup should have:
-- **Swap Contract**: `0x39d886A94568EaDa1e08e4005186F3fff2eE84f9` (already deployed)
+- **Swap Contract**: `0xA59CE17F2ea6946F48386B4bD7884512AeC674F4` (already deployed)
 - **MockUSDT**: `0xYourDeployedAddress` (deploy in Step 2)
 
 ## Notes

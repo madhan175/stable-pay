@@ -1,8 +1,21 @@
 const { ethers } = require('ethers');
 
-// Contract configuration
-const CONTRACT_ADDRESS = ' 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
-const USDT_ADDRESS = '0x1234567890123456789012345678901234567890'; // Mainnet USDT
+// Contract configuration - ensure addresses are properly checksummed
+const getChecksummedAddress = (address) => {
+  if (!address) return address;
+  try {
+    return ethers.getAddress(address.toLowerCase());
+  } catch (error) {
+    console.warn('Failed to checksum address:', address, error);
+    return address;
+  }
+};
+
+const RAW_CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4';
+const RAW_USDT_ADDRESS = process.env.USDT_ADDRESS || '0x61Ddf50869436D159090bBAC40f0fe7e4Ffcd4cD';
+
+const CONTRACT_ADDRESS = getChecksummedAddress(RAW_CONTRACT_ADDRESS); // From deployment.json
+const USDT_ADDRESS = getChecksummedAddress(RAW_USDT_ADDRESS); // From deployment.json (properly checksummed)
 
 // Contract ABI (same as frontend)
 const CONTRACT_ABI = [
