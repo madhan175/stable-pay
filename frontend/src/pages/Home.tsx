@@ -71,18 +71,18 @@ const Home = () => {
   };
 
   const handleDownloadClick = async () => {
-    console.log('Download button clicked', { isIOS, canInstall });
+    console.log('Download button clicked', { isIOS, canInstall, hasDeferredPrompt: !!deferredPrompt, isStandalone });
     if (isIOS) {
+      // For iOS, toggle instructions
       setShowIOSInstructions(!showIOSInstructions);
     } else {
+      // For desktop/mobile browsers, try to install
       try {
         await installApp();
+        // Note: Button stays visible even after click - allows users to try again if needed
       } catch (error) {
         console.error('Install error:', error);
-        // Show fallback instructions for desktop
-        if (window.confirm('Install prompt not available. Would you like to see manual installation instructions?')) {
-          alert('To install:\n\nChrome/Edge: Look for the install icon (⊕) in the address bar\nFirefox: Menu → Install\nOr check browser settings for "Install App" option');
-        }
+        // Error handling is done in installApp function
       }
     }
   };
@@ -90,9 +90,9 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24">
-        {/* Download/Install App Button - Always visible when can install */}
-        {!isStandalone && (
-          <div className="mb-4">
+        {/* Download/Install App Button - Always visible (never removed) */}
+        <div className="mb-4">
+          {!isStandalone ? (
             <button
               onClick={handleDownloadClick}
               type="button"
@@ -104,18 +104,25 @@ const Home = () => {
                 {isIOS ? 'Install App' : 'Download App'}
               </span>
             </button>
-            {showIOSInstructions && isIOS && (
-              <div className="mt-3 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-                <div className="text-sm font-semibold text-gray-900 mb-2">How to Install on iOS:</div>
-                <ol className="text-xs sm:text-sm text-gray-700 space-y-2 list-decimal list-inside">
-                  <li>Tap the <strong>Share</strong> button <span className="text-blue-600">(□↑)</span> at the bottom of your Safari browser</li>
-                  <li>Scroll down and select <strong>"Add to Home Screen"</strong></li>
-                  <li>Tap <strong>"Add"</strong> in the top right corner</li>
-                </ol>
-              </div>
-            )}
-          </div>
-        )}
+          ) : (
+            <div className="w-full bg-green-50 border-2 border-green-200 rounded-2xl shadow-sm p-4 sm:p-5 flex items-center justify-center gap-3">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              <span className="text-sm sm:text-base font-semibold text-green-800">
+                App Installed
+              </span>
+            </div>
+          )}
+          {showIOSInstructions && isIOS && (
+            <div className="mt-3 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+              <div className="text-sm font-semibold text-gray-900 mb-2">How to Install on iOS:</div>
+              <ol className="text-xs sm:text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                <li>Tap the <strong>Share</strong> button <span className="text-blue-600">(□↑)</span> at the bottom of your Safari browser</li>
+                <li>Scroll down and select <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> in the top right corner</li>
+              </ol>
+            </div>
+          )}
+        </div>
         {/* User Status Banner */}
         {user && (
           <div className="mb-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4">

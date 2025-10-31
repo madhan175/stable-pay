@@ -71,32 +71,56 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     };
   }, []);
 
+  const showManualInstallInstructions = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    let instructions = '';
+    
+    if (isIOS) {
+      instructions = 'To install on iOS:\n\n1. Tap the Share button (□↑) at the bottom\n2. Scroll and select "Add to Home Screen"\n3. Tap "Add"';
+    } else if (userAgent.includes('chrome') || userAgent.includes('edg')) {
+      instructions = 'To install on Chrome/Edge:\n\n1. Look for the Install icon (⊕) in the address bar (right side)\n2. Click it and select "Install"\n\nOR\n\n1. Click the menu (⋮) in the top right\n2. Look for "Install StablePay" or "Install app" option';
+    } else if (userAgent.includes('firefox')) {
+      instructions = 'To install on Firefox:\n\n1. Click the menu (☰) in the top right\n2. Look for "Install" or "Add to Home Screen" option';
+    } else {
+      instructions = 'To install this app:\n\n- Chrome/Edge: Look for install icon (⊕) in address bar\n- Firefox: Menu → Install\n- Safari (iOS): Share → Add to Home Screen\n- Check your browser\'s menu for install options';
+    }
+    
+    alert(instructions);
+  };
+
   const installApp = async () => {
     try {
       if (deferredPrompt) {
         console.log('Triggering install prompt...');
-        // Show the install prompt
-        await deferredPrompt.prompt();
-        
-        // Wait for the user to respond
-        const { outcome } = await deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-        } else {
-          console.log('User dismissed the install prompt');
+        try {
+          // Show the install prompt
+          await deferredPrompt.prompt();
+          
+          // Wait for the user to respond
+          const { outcome } = await deferredPrompt.userChoice;
+          
+          if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+            // Don't clear the prompt immediately - browser will handle it
+            // The prompt will be cleared automatically after installation
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          
+          // Note: We keep deferredPrompt available so button can be clicked again
+          // The browser will automatically clear it after successful installation
+        } catch (promptError) {
+          console.error('Error showing install prompt:', promptError);
+          // If prompt fails, show manual instructions
+          showManualInstallInstructions();
         }
-        
-        // Clear the deferred prompt since it can only be used once
-        setDeferredPrompt(null);
       } else {
-        console.warn('No deferred prompt available. User may need to use browser menu to install.');
-        // Fallback: Try to show manual instructions
-        alert('To install this app:\n\nChrome/Edge: Click the install icon in the address bar\nSafari (iOS): Tap Share → Add to Home Screen');
+        console.warn('No deferred prompt available yet. Showing manual instructions.');
+        showManualInstallInstructions();
       }
     } catch (error) {
       console.error('Error installing app:', error);
-      alert('Installation failed. Please try using your browser\'s install option.');
+      showManualInstallInstructions();
     }
   };
 
