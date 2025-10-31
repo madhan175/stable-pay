@@ -29,6 +29,8 @@ const Send = () => {
   const [swapHistory, setSwapHistory] = useState<SwapRecord[]>([]);
   const [gstRate, setGstRate] = useState('0');
   const [currencyRates, setCurrencyRates] = useState<{[key: string]: string}>({});
+  const [gasFee, setGasFee] = useState<string>('');
+  const [gasFeeLoading, setGasFeeLoading] = useState(false);
 
   // Initialize contract connection
   useEffect(() => {
@@ -94,6 +96,30 @@ const Send = () => {
     };
   }, [isConnected, account]);
 
+  const estimateGasFee = async () => {
+    if (!isConnected || !account) return;
+    
+    setGasFeeLoading(true);
+    try {
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice || feeData.maxFeePerGas || ethers.parseUnits('20', 'gwei');
+      
+      // Estimate gas for a simple transaction (21000 gas units)
+      const gasLimit = 21000n;
+      const estimatedFee = gasLimit * gasPrice;
+      const feeInETH = ethers.formatEther(estimatedFee);
+      
+      setGasFee(feeInETH);
+      console.log('⛽ [GAS] Estimated gas fee:', feeInETH, 'ETH');
+    } catch (error) {
+      console.error('Failed to estimate gas fee:', error);
+      setGasFee('0.001'); // Fallback estimate
+    } finally {
+      setGasFeeLoading(false);
+    }
+  };
+
   const handleConvert = async () => {
     if (!inrAmount) return;
     
@@ -121,6 +147,9 @@ const Send = () => {
       
       // Set USD amount (USDT is pegged to USD)
       setUsdAmount(usdtValue.toFixed(2));
+      
+      // Estimate gas fee when conversion is complete
+      await estimateGasFee();
     } catch (error) {
       console.error('Conversion error:', error);
     } finally {
@@ -180,15 +209,22 @@ const Send = () => {
             if (contractError.message === 'SEPOLIA_GAS_REQUIRED') {
               console.log('🔄 [CONTRACT] Contract fallback triggered, executing real Sepolia transaction');
               
-              // Execute real Sepolia transaction with actual gas fees
-              const hash = await frontendContractService.executeSepoliaTransaction(
-                'INR', 
-                ethers.parseUnits(usdtAmount, 6), 
-                '0x' + Math.random().toString(16).substr(2, 64)
-              );
-              setTxHash(hash);
-              console.log('✅ [SEPOLIA] Real Sepolia transaction completed:', hash);
-              return;
+              try {
+                // Execute real Sepolia transaction with actual gas fees
+                const hash = await frontendContractService.executeSepoliaTransaction(
+                  'INR', 
+                  ethers.parseUnits(usdtAmount, 6), 
+                  '0x' + Math.random().toString(16).substr(2, 64)
+                );
+                setTxHash(hash);
+                console.log('✅ [SEPOLIA] Real Sepolia transaction completed:', hash);
+                setTxStatus('success');
+                return;
+              } catch (sepoliaError: any) {
+                console.error('❌ [SEPOLIA] Sepolia transaction failed:', sepoliaError);
+                console.log('🔄 [FALLBACK] Falling back to mock transaction');
+                // Fall through to mock transaction
+              }
             }
             
             // Fallback to mock transaction (should not reach here with SEPOLIA_GAS_REQUIRED)
@@ -313,6 +349,30 @@ const Send = () => {
                 </div>
               </div>
             )}
+            
+            {/* Gas Fee Display */}
+            {gasFee && (
+              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">⛽</span>
+                    </div>
+                    <span className="text-sm font-medium text-blue-800">Estimated Gas Fee:</span>
+                  </div>
+                  {gasFeeLoading ? (
+                    <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                  ) : (
+                    <span className="text-sm font-semibold text-blue-900">
+                      {parseFloat(gasFee).toFixed(6)} ETH
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  Network fee for transaction execution
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -338,6 +398,23 @@ const Send = () => {
               <span className="text-sm font-medium text-yellow-800">
                 Phone verification required for transactions
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Gas Fee Warning */}
+        {gasFee && parseFloat(gasFee) > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">⛽</span>
+              </div>
+              <span className="text-sm font-medium text-orange-800">
+                Gas Fee Required: {parseFloat(gasFee).toFixed(6)} ETH
+              </span>
+            </div>
+            <div className="text-xs text-orange-600 mt-1">
+              You need Sepolia ETH in your wallet to pay for transaction fees
             </div>
           </div>
         )}

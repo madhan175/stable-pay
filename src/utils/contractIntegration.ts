@@ -148,10 +148,10 @@ const ENV_CONTRACT_ADDRESS = (import.meta as any)?.env?.VITE_CONTRACT_ADDRESS ||
 const LS_CONTRACT_ADDRESS = (() => {
   try { return localStorage.getItem('CONTRACT_ADDRESS') || ''; } catch { return ''; }
 })();
-const RAW_CONTRACT_ADDRESS = ENV_CONTRACT_ADDRESS || LS_CONTRACT_ADDRESS;
+const RAW_CONTRACT_ADDRESS = ENV_CONTRACT_ADDRESS || LS_CONTRACT_ADDRESS || '0x39d886A94568EaDa1e08e4005186F3fff2eE84f9';
 let CONTRACT_ADDRESS: string = '';
 try {
-  CONTRACT_ADDRESS = RAW_CONTRACT_ADDRESS ? ethers.getAddress(RAW_CONTRACT_ADDRESS) : '';
+  CONTRACT_ADDRESS = RAW_CONTRACT_ADDRESS ? ethers.getAddress(RAW_CONTRACT_ADDRESS) : '0x39d886A94568EaDa1e08e4005186F3fff2eE84f9';
 } catch {
   CONTRACT_ADDRESS = '';
 }
@@ -314,7 +314,8 @@ export class FrontendContractService {
             usdtAddress = await contract.usdt();
             console.log('💰 [CONTRACT] USDT Address from contract:', usdtAddress);
           } catch (error) {
-            throw new Error('USDT address unavailable. Configure VITE_USDT_ADDRESS for frontend.');
+            console.warn('⚠️ [CONTRACT] USDT address unavailable, skipping USDT checks');
+            throw new Error('USDT_ADDRESS_UNAVAILABLE');
           }
         }
         
@@ -380,10 +381,15 @@ export class FrontendContractService {
         }
         
         console.log('✅ [CONTRACT] USDT checks completed successfully');
-      } catch (usdtError) {
+      } catch (usdtError: any) {
         console.warn('⚠️ [CONTRACT] USDT integration failed, switching to simplified mode:', usdtError);
         console.log('🔄 [CONTRACT] Skipping USDT balance and allowance checks');
         skipUSDTChecks = true;
+        
+        // If it's a USDT address issue, we can continue with simplified mode
+        if (usdtError.message === 'USDT_ADDRESS_UNAVAILABLE') {
+          console.log('🔄 [CONTRACT] USDT contract not available, using simplified swap mode');
+        }
       }
       
       // Execute the swap
@@ -413,8 +419,14 @@ export class FrontendContractService {
           console.warn(`⚠️ [CONTRACT] Currency ${toCurrency} not supported, executing real Sepolia transaction`);
           throw new Error('SEPOLIA_GAS_REQUIRED');
         }
-      } catch (currencyError) {
+      } catch (currencyError: any) {
         console.warn('⚠️ [CONTRACT] Could not verify currency support, continuing...');
+        // If currency check fails, it might be a contract issue, so we should try Sepolia fallback
+        if (currencyError.message?.includes('could not decode result data') || 
+            currencyError.message?.includes('BAD_DATA')) {
+          console.log('🔄 [CONTRACT] Contract data decode failed, switching to Sepolia mode');
+          throw new Error('SEPOLIA_GAS_REQUIRED');
+        }
       }
       
       try {
@@ -457,18 +469,31 @@ export class FrontendContractService {
           console.log('🔄 [SEPOLIA] Contract failed, executing real Sepolia transaction instead');
           throw new Error('SEPOLIA_GAS_REQUIRED');
         } else if (swapError.message?.includes('gas estimation failed')) {
-          throw new Error('Transaction will fail. Please check your USDT balance and allowance.');
+          console.log('🔄 [SEPOLIA] Gas estimation failed, switching to Sepolia mode');
+          throw new Error('SEPOLIA_GAS_REQUIRED');
+        } else if (swapError.message?.includes('SEPOLIA_GAS_REQUIRED')) {
+          // Re-throw SEPOLIA_GAS_REQUIRED errors as-is
+          throw swapError;
         } else {
-          throw new Error(`Swap execution failed: ${swapError.message || 'Unknown error'}`);
+          console.log('🔄 [SEPOLIA] Unknown swap error, switching to Sepolia mode');
+          throw new Error('SEPOLIA_GAS_REQUIRED');
         }
       }
     } catch (error: any) {
       console.error('❌ [CONTRACT] Swap failed:', error);
       
+      // Check if this is a SEPOLIA_GAS_REQUIRED error that should be passed through
+      if (error.message === 'SEPOLIA_GAS_REQUIRED') {
+        console.log('🔄 [SEPOLIA] SEPOLIA_GAS_REQUIRED error passed through');
+        throw error;
+      }
+      
       // Check if this is a contract-related error that should trigger fallback
       const isContractError = error.message?.includes('execution reverted') || 
                              error.message?.includes('gas estimation failed') ||
-                             error.message?.includes('Transaction will fail');
+                             error.message?.includes('Transaction will fail') ||
+                             error.message?.includes('could not decode result data') ||
+                             error.message?.includes('BAD_DATA');
       
       if (isContractError) {
         console.warn('⚠️ [CONTRACT] Contract swap failed, executing real Sepolia transaction instead');
@@ -481,7 +506,8 @@ export class FrontendContractService {
       } else if (error.message?.includes('user rejected')) {
         throw new Error('Transaction cancelled by user.');
       } else {
-        throw new Error(`Transaction failed: ${error.message || 'Unknown error'}`);
+        console.log('🔄 [SEPOLIA] Unknown error, switching to Sepolia mode');
+        throw new Error('SEPOLIA_GAS_REQUIRED');
       }
     }
   }

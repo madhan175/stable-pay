@@ -55,13 +55,6 @@ export const convertINRToUSDT = async (inrAmount: number): Promise<number> => {
 export const getUSDTBalance = async (address: string): Promise<number> => {
   try {
     if (!ethers.isAddress(address)) throw new Error('Invalid address format');
-    
-    // Check if USDT contract is configured
-    if (!CONTRACT_ADDRESSES.usdt) {
-      console.warn('⚠️ [USDT] USDT contract not configured, returning mock balance');
-      return 1000; // Mock balance for testing
-    }
-    
     const provider = await getProvider();
     const usdtContract = new ethers.Contract(CONTRACT_ADDRESSES.usdt, USDT_ABI, provider);
     const decimals = await usdtContract.decimals();
@@ -69,8 +62,7 @@ export const getUSDTBalance = async (address: string): Promise<number> => {
     return Number(ethers.formatUnits(balance, decimals));
   } catch (error) {
     console.error('Error getting USDT balance:', error);
-    console.warn('⚠️ [USDT] USDT balance check failed, returning mock balance');
-    return 1000; // Mock balance for testing
+    throw error instanceof Error ? error : new Error('Failed to get USDT balance');
   }
 };
 
@@ -78,14 +70,6 @@ export const sendUSDT = async (toAddress: string, amount: number): Promise<strin
   try {
     if (!ethers.isAddress(toAddress)) throw new Error('Invalid recipient address');
     if (amount <= 0) throw new Error('Amount must be greater than 0');
-    
-    // Check if USDT contract is configured
-    if (!CONTRACT_ADDRESSES.usdt) {
-      console.warn('⚠️ [USDT] USDT contract not configured, using mock transaction');
-      // Return a mock transaction hash for testing
-      return '0x' + Math.random().toString(16).substr(2, 64);
-    }
-    
     const provider = await getProvider();
     const signer = await provider.getSigner();
     const usdtContract = new ethers.Contract(CONTRACT_ADDRESSES.usdt, USDT_ABI, signer);
@@ -103,9 +87,7 @@ export const sendUSDT = async (toAddress: string, amount: number): Promise<strin
     return tx.hash;
   } catch (error) {
     console.error('Transfer failed:', error);
-    console.warn('⚠️ [USDT] USDT transfer failed, using mock transaction');
-    // Return a mock transaction hash for testing
-    return '0x' + Math.random().toString(16).substr(2, 64);
+    throw error instanceof Error ? error : new Error('Transaction failed');
   }
 };
 

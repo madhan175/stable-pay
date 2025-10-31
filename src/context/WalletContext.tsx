@@ -42,13 +42,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const network = await provider.getNetwork();
         console.log('🌐 [METAMASK] Current network:', network.name, network.chainId);
         
-        // Switch to Sepolia if not already on it
+        // Switch to Sepolia if not already on it (where contracts are deployed)
         if (network.chainId !== 11155111n) {
           console.log('🔄 [METAMASK] Switching to Sepolia testnet...');
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID
+              params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID (11155111)
             });
             console.log('✅ [METAMASK] Switched to Sepolia testnet');
           } catch (switchError: any) {
@@ -58,7 +58,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0xaa36a7',
+                  chainId: '0xaa36a7', // 11155111 in hex
                   chainName: 'Sepolia Test Network',
                   nativeCurrency: {
                     name: 'SepoliaETH',
@@ -72,7 +72,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               console.log('✅ [METAMASK] Sepolia testnet added and switched');
             } else {
               console.error('❌ [METAMASK] Failed to switch to Sepolia:', switchError);
-              throw switchError;
+              console.log('⚠️ [METAMASK] Continuing with current network - contracts may not be available');
             }
           }
         }
@@ -114,13 +114,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             console.log('🔍 [METAMASK] Checking existing connection...');
             console.log('🌐 [METAMASK] Current network:', network.name, network.chainId);
             
-            // Check if on Sepolia
+            // Check if on Sepolia (where contracts are deployed)
             if (network.chainId === 11155111n) {
               setProvider(provider);
               setAccount(accounts[0]);
-              console.log('✅ [METAMASK] Already connected to Sepolia');
+              console.log('✅ [METAMASK] Already connected to Sepolia testnet');
             } else {
-              console.log('⚠️ [METAMASK] Not on Sepolia network, user needs to switch');
+              console.log('⚠️ [METAMASK] Not on Sepolia testnet, contracts may not be available');
             }
           }
         } catch (error) {
@@ -143,10 +143,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Listen for network changes
       const handleChainChanged = (chainId: string) => {
         console.log('🔄 [METAMASK] Network changed to:', chainId);
-        if (chainId === '0xaa36a7') { // Sepolia chain ID
-          console.log('✅ [METAMASK] Switched to Sepolia testnet');
+        if (chainId === '0xaa36a7') { // Sepolia chain ID (11155111)
+          console.log('✅ [METAMASK] Switched to Sepolia testnet - contracts available');
         } else {
-          console.log('⚠️ [METAMASK] Not on Sepolia network');
+          console.log('⚠️ [METAMASK] Not on Sepolia testnet - contracts may not be available');
         }
       };
 

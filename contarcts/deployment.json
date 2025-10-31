@@ -1,9 +1,10 @@
 {
-  "contractAddress": "0x4d800E9F98d9a108518A8c9e39809024a61d638e",
-  "usdtAddress": "0x1234567890123456789012345678901234567890",
+  "contractAddress": "0x39d886A94568EaDa1e08e4005186F3fff2eE84f9",
+  "usdtAddress": "",
   "admin": "0x673109Cb9292ad309a79db05a0f0D39327A6a2E6",
   "network": "sepolia",
   "chainId": 11155111,
-  "blockNumber": 9306291,
-  "timestamp": "2025-09-29T15:31:07.982Z"
+  "blockNumber": 9478817,
+  "timestamp": "2025-10-24T08:11:56.047Z",
+  "note": "USDT contract not deployed - using mock mode for testing"
 }
