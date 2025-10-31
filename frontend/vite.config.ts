@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'StablePay 2.0',
@@ -18,7 +18,9 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/?utm_source=pwa',
+        id: '/',
+        categories: ['finance', 'business', 'productivity'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -35,6 +37,21 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any',
+          },
+        ],
+        shortcuts: [
+          {
+            name: 'Send Payment',
+            short_name: 'Send',
+            description: 'Send USDT payment',
+            url: '/send',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }],
           },
         ],
       },
@@ -63,6 +80,9 @@ export default defineConfig({
         enabled: true,
         type: 'module',
       },
+      // Ensure service worker is registered for iOS PWA
+      strategies: 'generateSW',
+      injectRegister: 'auto',
     }),
   ],
   optimizeDeps: {

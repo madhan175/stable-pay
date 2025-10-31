@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_YVhMMj0ULiPjTpID1nFdXmD98Bry",
+  "orgId": "team_QVylvdkGDk8SYpNJHD57kfAP",
+  "projectName": "stable-pay-2.1",
+  "settings": {
+    "createdAt": 1761932316016,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rootDirectory": "frontend",
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}

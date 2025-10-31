@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import './index.css';
 
@@ -29,6 +30,25 @@ window.addEventListener('unhandledrejection', (event) => {
   // Prevent the error from showing in console as unhandled
   event.preventDefault();
 });
+
+// Register service worker for PWA (iPhone installation support)
+if ('serviceWorker' in navigator) {
+  registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      console.log('🔄 PWA: New content available, refresh to update');
+    },
+    onOfflineReady() {
+      console.log('✅ PWA: App ready to work offline');
+    },
+    onRegistered(registration) {
+      console.log('✅ PWA: Service Worker registered:', registration);
+    },
+    onRegisterError(error) {
+      console.error('❌ PWA: Service Worker registration failed:', error);
+    },
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -166,19 +166,43 @@ ALLOWED_ORIGINS=https://your-project.vercel.app
 
 **⏱️ Time: 15 minutes**
 
-### 5.1 Test Checklist
+👉 **Detailed Verification Guide**: See [VERIFY-DEPLOYMENT.md](./VERIFY-DEPLOYMENT.md) for complete verification steps
 
+### 5.1 Quick Verification
+
+**Option 1: Use Test Page**
+1. Download `test-connection.html` from project root
+2. Open it in browser
+3. Enter your backend and frontend URLs
+4. Click "Run All Tests"
+5. Review results
+
+**Option 2: Browser Console Test**
+1. Visit your Vercel frontend
+2. Open browser DevTools (F12)
+3. Go to Console tab
+4. Type: `import.meta.env.VITE_API_URL`
+5. Should show your backend URL
+6. Test API: 
+```javascript
+fetch('https://your-backend.onrender.com/health')
+  .then(r => r.json())
+  .then(data => console.log('✅ Connected:', data))
+```
+
+### 5.2 Test Checklist
+
+- [ ] Backend health endpoint works: `/health`
 - [ ] Frontend loads without errors
+- [ ] No CORS errors in browser console
 - [ ] OTP login works (use `123456` as OTP)
 - [ ] KYC upload works
 - [ ] Transaction creation works
-- [ ] No CORS errors in console
-- [ ] Backend health check returns OK
 - [ ] Database operations work
 - [ ] PWA features work (service worker, install prompt)
 - [ ] Mobile-responsive design works correctly
 
-### 5.2 Common Issues
+### 5.3 Common Issues
 
 **CORS Error:**
 ```

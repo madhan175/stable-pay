@@ -65,6 +65,19 @@ export const transactionAPI = {
   create: (data: any) => api.post('/tx/create', data),
   execute: (transactionId: string, data: any) => api.post(`/tx/execute/${transactionId}`, data),
   getHistory: (userId: string) => api.get(`/tx/history/${userId}`),
+  downloadReceipt: async (transactionId: string) => {
+    const response = await api.get(`/tx/receipt/${transactionId}`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `receipt-${transactionId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 // Currency API

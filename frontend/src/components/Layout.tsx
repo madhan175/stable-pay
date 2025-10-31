@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Coins, Shield, Download } from 'lucide-react';
 import WalletConnect from './WalletConnect';
+import PhoneWalletNav from './PhoneWalletNav';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { useAuth } from '../context/AuthContext';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -47,6 +48,9 @@ const Layout = () => {
                   <Download className="w-5 h-5" />
                 </button>
               )}
+              
+              {/* Phone Wallet Navigation */}
+              <PhoneWalletNav />
               
               <div className="relative group">
                 <Link
