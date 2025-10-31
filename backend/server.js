@@ -19,6 +19,12 @@ const server = http.createServer(app);
 
 // CORS configuration for production (Render) and development
 const getAllowedOrigins = () => {
+  // Use ALLOWED_ORIGINS if provided (comma-separated)
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(',').map(url => url.trim());
+  }
+  
+  // Fallback to default origins
   const origins = [
     'http://localhost:5173',
     'http://localhost:5174'
@@ -27,11 +33,6 @@ const getAllowedOrigins = () => {
   // Add production frontend URLs
   if (process.env.FRONTEND_URL) {
     origins.push(process.env.FRONTEND_URL);
-  }
-  
-  // Add Vercel deployment URLs (comma-separated)
-  if (process.env.VERCEL_FRONTEND_URLS) {
-    origins.push(...process.env.VERCEL_FRONTEND_URLS.split(','));
   }
   
   return origins;
@@ -603,6 +604,36 @@ app.post('/kyc/verify', async (req, res) => {
   }
 });
 
+// Link wallet address to user
+app.post('/user/link-wallet', async (req, res) => {
+  try {
+    const { userId, walletAddress } = req.body;
+    if (!userId || !walletAddress) {
+      return res.status(400).json({ error: 'User ID and wallet address are required' });
+    }
+
+    // Validate wallet address format (basic check)
+    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      return res.status(400).json({ error: 'Invalid wallet address format' });
+    }
+
+    try {
+      const updatedUser = await supabaseService.updateUser(userId, {
+        wallet_address: walletAddress.toLowerCase(),
+        updated_at: new Date().toISOString()
+      });
+      console.log('✅ [WALLET] Linked wallet address to user:', userId);
+      res.json({ success: true, user: updatedUser });
+    } catch (updateError) {
+      console.error('Failed to link wallet:', updateError);
+      res.status(500).json({ error: 'Failed to link wallet address' });
+    }
+  } catch (error) {
+    console.error('Link wallet error:', error);
+    res.status(500).json({ error: 'Failed to link wallet' });
+  }
+});
+
 // Transaction Routes
 app.post('/tx/create', async (req, res) => {
   try {
@@ -635,6 +666,22 @@ app.post('/tx/execute/:transactionId', async (req, res) => {
   } catch (error) {
     console.error('Transaction execution error:', error);
     res.status(500).json({ error: 'Failed to execute transaction' });
+  }
+});
+
+// Get transaction history for a user
+app.get('/tx/history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+    
+    const transactions = await transactionService.getTransactionHistory(userId);
+    res.json(transactions || []);
+  } catch (error) {
+    console.error('Get transaction history error:', error);
+    res.status(500).json({ error: 'Failed to fetch transaction history' });
   }
 });
 
@@ -681,44 +728,86 @@ app.post('/api/transactions', async (req, res) => {
     };
     payments.unshift(record);
 
-    // Try to save to Supabase if we have user context
+    // Save to Supabase for both sender and receiver if users exist
     try {
-      // Try to find user by wallet address
-      const userData = await supabaseService.supabase
-        .from('users')
-        .select('id')
-        .eq('wallet_address', sender.toLowerCase())
-        .single();
+      // Calculate USD/USDT amounts (approximate)
+      const amountUsdt = parseFloat(amount);
+      const amountInr = amountUsdt * 83; // Approximate conversion
       
-      if (userData && !userData.error && userData.data) {
-        const userId = userData.data.id;
-        
-        // Calculate USD/USDT amounts (approximate)
-        const amountUsdt = parseFloat(amount);
-        const amountInr = amountUsdt * 83; // Approximate conversion
-        
-        // Save to Supabase transactions table
-        const supabaseTx = await supabaseService.createTransaction({
-          user_id: userId,
-          recipient_wallet: receiver,
-          amount_inr: amountInr,
-          amount_usd: amountUsdt,
-          amount_usdt: amountUsdt,
-          requires_kyc: false,
-          kyc_verified: false,
-          status: status,
-          tx_hash: txHash,
-          block_number: actualBlockNumber ? parseInt(actualBlockNumber) : null,
-          gas_used: actualGasUsed ? parseInt(actualGasUsed) : null
-        });
-        
-        console.log('✅ [TRANSACTION] Saved to Supabase:', supabaseTx.id);
+      // Try to find sender user by wallet address
+      let senderUserData = null;
+      try {
+        senderUserData = await supabaseService.supabase
+          .from('users')
+          .select('id')
+          .eq('wallet_address', sender.toLowerCase())
+          .maybeSingle();
+      } catch (e) {
+        console.warn('⚠️ [TRANSACTION] Could not query sender user:', e.message);
+      }
+      
+      // Try to find receiver user by wallet address
+      let receiverUserData = null;
+      try {
+        receiverUserData = await supabaseService.supabase
+          .from('users')
+          .select('id')
+          .eq('wallet_address', receiver.toLowerCase())
+          .maybeSingle();
+      } catch (e) {
+        console.warn('⚠️ [TRANSACTION] Could not query receiver user:', e.message);
+      }
+      
+      // Save transaction for sender if user found
+      if (senderUserData?.data?.id) {
+        const senderUserId = senderUserData.data.id;
+        try {
+          const supabaseTx = await supabaseService.createTransaction({
+            user_id: senderUserId,
+            recipient_wallet: receiver,
+            amount_inr: amountInr,
+            amount_usd: amountUsdt,
+            amount_usdt: amountUsdt,
+            requires_kyc: false,
+            kyc_verified: false,
+            status: status === 'success' ? 'completed' : status,
+            tx_hash: txHash,
+            block_number: actualBlockNumber ? parseInt(actualBlockNumber) : null,
+            gas_used: actualGasUsed ? parseInt(actualGasUsed) : null,
+            completed_at: status === 'success' ? new Date().toISOString() : null
+          });
+          console.log('✅ [TRANSACTION] Saved to Supabase for sender:', supabaseTx.id);
+        } catch (txError) {
+          console.warn('⚠️ [TRANSACTION] Failed to save sender transaction:', txError.message);
+        }
       } else {
-        // Try to find or create user by searching all recent users
-        // This is a fallback when wallet isn't linked to a user yet
-        console.log('⚠️ [TRANSACTION] User not found for wallet:', sender);
-        console.log('⚠️ [TRANSACTION] Transaction saved to in-memory store only');
-        console.log('💡 [TRANSACTION] Tip: Link wallet address to user account during login/registration');
+        console.log('⚠️ [TRANSACTION] Sender user not found for wallet:', sender);
+      }
+      
+      // Save transaction for receiver if user found
+      if (receiverUserData?.data?.id) {
+        const receiverUserId = receiverUserData.data.id;
+        try {
+          const supabaseTx = await supabaseService.createTransaction({
+            user_id: receiverUserId,
+            recipient_wallet: receiver, // This is their own wallet (received to)
+            amount_inr: amountInr,
+            amount_usd: amountUsdt,
+            amount_usdt: amountUsdt,
+            requires_kyc: false,
+            kyc_verified: false,
+            status: status === 'success' ? 'completed' : status,
+            tx_hash: txHash,
+            block_number: actualBlockNumber ? parseInt(actualBlockNumber) : null,
+            gas_used: actualGasUsed ? parseInt(actualGasUsed) : null,
+            completed_at: status === 'success' ? new Date().toISOString() : null
+          });
+          console.log('✅ [TRANSACTION] Saved to Supabase for receiver:', supabaseTx.id);
+        } catch (txError) {
+          console.warn('⚠️ [TRANSACTION] Failed to save receiver transaction:', txError.message);
+        }
+      } else {
+        console.log('⚠️ [TRANSACTION] Receiver user not found for wallet:', receiver);
       }
     } catch (supabaseError) {
       console.warn('⚠️ [TRANSACTION] Supabase save failed (continuing with in-memory):', supabaseError.message);
@@ -740,8 +829,58 @@ app.get('/api/merchant-transactions', async (req, res) => {
   try {
     const wallet = (req.query.wallet || '').toString().toLowerCase();
     if (!wallet) return res.status(400).json({ error: 'wallet required' });
-    const items = payments.filter(p => (p.receiver || '').toLowerCase() === wallet);
-    return res.json(items);
+    
+    // Get from in-memory payments array
+    const inMemoryItems = payments.filter(p => (p.receiver || '').toLowerCase() === wallet);
+    
+    // Also query Supabase for transactions
+    let supabaseItems = [];
+    try {
+      // Try to find user by wallet address
+      const userData = await supabaseService.supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', wallet)
+        .maybeSingle();
+      
+      if (userData?.data?.id) {
+        const userId = userData.data.id;
+        // Get transactions where recipient_wallet matches (received transactions)
+        const { data, error } = await supabaseService.supabase
+          .from('transactions')
+          .select('*')
+          .eq('recipient_wallet', wallet)
+          .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+          // Convert Supabase transactions to payment format
+          supabaseItems = data.map(tx => ({
+            txHash: tx.tx_hash,
+            sender: null, // Not stored in transactions table
+            receiver: tx.recipient_wallet,
+            amount: tx.amount_usdt.toString(),
+            status: tx.status === 'completed' ? 'success' : tx.status,
+            timestamp: tx.created_at || tx.completed_at,
+            gas_used: tx.gas_used?.toString(),
+            block_number: tx.block_number?.toString()
+          }));
+        }
+      }
+    } catch (supabaseError) {
+      console.warn('⚠️ [MERCHANT-TX] Supabase query failed (using in-memory only):', supabaseError.message);
+    }
+    
+    // Combine and deduplicate by txHash
+    const allItems = [...inMemoryItems, ...supabaseItems];
+    const uniqueItems = Array.from(
+      new Map(allItems.map(item => [item.txHash, item])).values()
+    ).sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0).getTime();
+      const timeB = new Date(b.timestamp || 0).getTime();
+      return timeB - timeA; // Newest first
+    });
+    
+    return res.json(uniqueItems);
   } catch (error) {
     console.error('Fetch merchant tx error:', error);
     return res.status(500).json({ error: 'Failed to fetch transactions' });

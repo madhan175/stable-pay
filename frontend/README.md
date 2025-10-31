@@ -74,7 +74,7 @@ VITE_CONTRACT_ADDRESS=0x...
 
 2. **Configure Build Settings**
    - Framework Preset: Vite
-   - Root Directory: `frontend`
+   - Root Directory: `frontend`  
    - Build Command: `npm run build`
    - Output Directory: `dist`
    - Install Command: `npm install`

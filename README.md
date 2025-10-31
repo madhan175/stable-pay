@@ -12,6 +12,17 @@ StablePay2.0/
 └── DEPLOYMENT.md     # Deployment guide
 ```
 
+## 🚀 Quick Deploy
+
+**Want to deploy to production?**
+
+👉 **[QUICK-DEPLOYMENT-STEPS.md](./QUICK-DEPLOYMENT-STEPS.md)** - Deploy in ~1 hour!
+
+**Need more info?**
+- [Complete Deployment Guide](./DEPLOYMENT.md)
+- [Environment Variables](./DEPLOYMENT-ENV-VARS.md)
+- [Deployment Overview](./DEPLOYMENT-README.md)
+
 ## 🚀 Features
 
 - **Seamless UPI to USDT Bridge**: Users pay in INR, merchants receive USDT

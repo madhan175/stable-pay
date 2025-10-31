@@ -48,6 +48,12 @@ export const kycAPI = {
     api.post('/kyc/verify', { userId, ...data }),
 };
 
+// User API
+export const userAPI = {
+  linkWallet: (userId: string, walletAddress: string) => 
+    api.post('/user/link-wallet', { userId, walletAddress }),
+};
+
 // Transaction API
 export const transactionAPI = {
   create: (data: any) => api.post('/tx/create', data),
