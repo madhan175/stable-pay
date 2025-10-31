@@ -44,6 +44,8 @@ export const kycAPI = {
     },
   }),
   getStatus: (userId: string) => api.get(`/kyc/status/${userId}`),
+  verifyKYCDocument: (userId: string, data: { idNumber: string; dob: string; documentId?: string | null; phone?: string | null }) => 
+    api.post('/kyc/verify', { userId, ...data }),
 };
 
 // Transaction API

@@ -6,5 +6,5 @@
   "chainId": 11155111,
   "blockNumber": 9478817,
   "timestamp": "2025-10-24T08:11:56.047Z",
-  "note": "USDT contract not deployed - using mock mode for testing"
+  "note": "USDT contract not deployed yet. Deploy MockUSDT using: npx hardhat run scripts/deploy-mock-usdt.js --network sepolia. Then update this file with the usdtAddress."
 }

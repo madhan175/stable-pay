@@ -184,6 +184,9 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
       formData.append('document', file);
       formData.append('userId', user.id);
       formData.append('documentType', documentType);
+      if (user.phone) {
+        formData.append('phone', user.phone);
+      }
 
       // Join KYC room for real-time updates
       socketService.joinKYCRoom(user.id);

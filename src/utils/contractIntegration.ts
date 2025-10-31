@@ -891,7 +891,49 @@ export class FrontendContractService {
       if (!provider) {
         throw new Error('Provider not available');
       }
-      const feeData = await provider.getFeeData();
+      // Use safe fee data getter that handles networks without EIP-1559 support
+      let feeData: ethers.FeeData;
+      try {
+        feeData = await provider.getFeeData();
+      } catch (error: any) {
+        // Network doesn't support EIP-1559, use legacy gas price
+        const errorMsg = error?.message || String(error);
+        const isEIP1559Error = errorMsg.includes('maxPriorityFeePerGas') || errorMsg.includes('-32601');
+        if (isEIP1559Error) {
+          console.warn('⚠️ [SEPOLIA] Network doesn\'t support EIP-1559, using legacy gas pricing');
+        } else {
+          console.warn('⚠️ [SEPOLIA] getFeeData failed, using fallback:', errorMsg);
+        }
+        
+        // Try to get gas price from window.ethereum directly
+        let gasPrice: bigint | null = null;
+        try {
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const gasPriceHex = await window.ethereum.request({ method: 'eth_gasPrice' });
+            if (gasPriceHex && typeof gasPriceHex === 'string') {
+              gasPrice = BigInt(gasPriceHex);
+            }
+          }
+        } catch {
+          // Try provider.send as fallback
+          try {
+            if ('send' in provider && typeof (provider as any).send === 'function') {
+              const result = await (provider as any).send('eth_gasPrice', []);
+              if (result) {
+                gasPrice = typeof result === 'string' ? BigInt(result) : BigInt(result);
+              }
+            }
+          } catch {
+            // Ignore
+          }
+        }
+        
+        feeData = {
+          gasPrice: gasPrice || ethers.parseUnits('20', 'gwei'),
+          maxFeePerGas: null,
+          maxPriorityFeePerGas: null
+        };
+      }
       console.log('⛽ [SEPOLIA] Fee data:', {
         gasPrice: feeData.gasPrice?.toString(),
         maxFeePerGas: feeData.maxFeePerGas?.toString(),

@@ -38,6 +38,85 @@ export const getProvider = async (): Promise<ethers.BrowserProvider> => {
   return new ethers.BrowserProvider(window.ethereum);
 };
 
+/**
+ * Safely get fee data from provider with fallback for networks that don't support EIP-1559
+ * Handles the case where eth_maxPriorityFeePerGas is not available
+ */
+export const getSafeFeeData = async (provider: ethers.Provider): Promise<ethers.FeeData> => {
+  try {
+    // Try to get fee data (may fail on networks without EIP-1559 support)
+    const feeData = await provider.getFeeData();
+    
+    // If we got fee data with EIP-1559 fields, return it
+    if (feeData.maxFeePerGas || feeData.maxPriorityFeePerGas) {
+      return feeData;
+    }
+    
+    // If we got legacy gasPrice, use that
+    if (feeData.gasPrice) {
+      return feeData;
+    }
+    
+    // Fallback to default gas price
+    return {
+      gasPrice: ethers.parseUnits('20', 'gwei'),
+      maxFeePerGas: null,
+      maxPriorityFeePerGas: null
+    };
+  } catch (error: any) {
+    // Network doesn't support EIP-1559 or getFeeData failed
+    // This happens when the RPC doesn't support eth_maxPriorityFeePerGas
+    const errorMsg = error?.message || String(error);
+    const isEIP1559Error = errorMsg.includes('maxPriorityFeePerGas') || errorMsg.includes('-32601');
+    
+    if (isEIP1559Error) {
+      console.warn('⚠️ [GAS] Network doesn\'t support EIP-1559 (eth_maxPriorityFeePerGas not available), using legacy gas pricing');
+    } else {
+      console.warn('⚠️ [GAS] getFeeData failed, using fallback:', errorMsg);
+    }
+    
+    // Try to get gas price using window.ethereum directly (for BrowserProvider)
+    try {
+      if (typeof window !== 'undefined' && window.ethereum) {
+        const gasPriceHex = await window.ethereum.request({ method: 'eth_gasPrice' });
+        if (gasPriceHex && typeof gasPriceHex === 'string') {
+          return {
+            gasPrice: BigInt(gasPriceHex),
+            maxFeePerGas: null,
+            maxPriorityFeePerGas: null
+          };
+        }
+      }
+    } catch (rpcError) {
+      console.warn('⚠️ [GAS] Direct RPC call failed, using default:', rpcError);
+    }
+    
+    // Try provider.send if available (for JsonRpcProvider)
+    try {
+      if ('send' in provider && typeof (provider as any).send === 'function') {
+        const gasPrice = await (provider as any).send('eth_gasPrice', []);
+        if (gasPrice) {
+          return {
+            gasPrice: typeof gasPrice === 'string' ? BigInt(gasPrice) : BigInt(gasPrice),
+            maxFeePerGas: null,
+            maxPriorityFeePerGas: null
+          };
+        }
+      }
+    } catch (rpcError) {
+      // Ignore - already tried window.ethereum
+    }
+    
+    // Final fallback: use a reasonable default gas price
+    console.log('⚠️ [GAS] Using fallback gas price: 20 gwei');
+    return {
+      gasPrice: ethers.parseUnits('20', 'gwei'),
+      maxFeePerGas: null,
+      maxPriorityFeePerGas: null
+    };
+  }
+};
+
 export const convertINRToUSDT = async (inrAmount: number): Promise<number> => {
   try {
     const provider = await getProvider();
@@ -95,7 +174,7 @@ export const sendUSDT = async (toAddress: string, amount: number): Promise<strin
     if (balance < amountWei) throw new Error('Insufficient USDT balance');
     const gasEstimate = await usdtContract.transfer.estimateGas(toAddress, amountWei);
     const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100);
-    const feeData = await provider.getFeeData();
+    const feeData = await getSafeFeeData(provider);
     const gasPrice = feeData.gasPrice || feeData.maxFeePerGas || ethers.parseUnits('20', 'gwei');
     const tx = await usdtContract.transfer(toAddress, amountWei, { gasLimit, gasPrice });
     const receipt = await tx.wait();

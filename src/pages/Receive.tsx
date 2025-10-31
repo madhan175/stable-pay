@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
+import WalletQRCode from '../components/WalletQRCode';
 import { getUSDTBalance } from '../utils/blockchain';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 import { paymentsAPI } from '../services/api';
@@ -283,6 +284,20 @@ const Receive = () => {
               </div>
             )}
           </div>
+
+          {/* Wallet QR Code */}
+          {isConnected && account && (
+            <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-100">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Receive Payments</h2>
+              <div className="max-w-md mx-auto">
+                <WalletQRCode 
+                  walletAddress={account} 
+                  size={256}
+                  showDownload={true}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Contract Status */}
           {isConnected && (

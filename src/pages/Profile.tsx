@@ -1,5 +1,6 @@
 import { Lock, Wallet, CreditCard, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BiometricAuth from '../components/BiometricAuth';
 
 const Profile = () => {
   return (
@@ -27,13 +28,16 @@ const Profile = () => {
           <Lock className="w-5 h-5 text-green-600" />
           <div className="font-semibold">Security</div>
         </div>
-        <div className="flex items-center justify-between py-2">
+        <div className="flex items-center justify-between py-2 mb-4">
           <span className="text-sm text-gray-700">Two-Step Verification</span>
           <input type="checkbox" className="h-4 w-4" />
         </div>
-        <div className="flex items-center justify-between py-2">
-          <span className="text-sm text-gray-700">Biometric Login</span>
-          <input type="checkbox" className="h-4 w-4" />
+        <div className="border-t border-gray-200 pt-4">
+          <BiometricAuth 
+            onAuthenticated={() => {
+              console.log('Biometric authentication completed from Profile');
+            }}
+          />
         </div>
       </div>
 

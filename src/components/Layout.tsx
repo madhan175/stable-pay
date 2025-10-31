@@ -1,16 +1,27 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Coins, Shield } from 'lucide-react';
 import WalletConnect from './WalletConnect';
+import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
   const location = useLocation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogoClick = (e: React.MouseEvent) => {
+    // If user is logged in and verified, go to send page instead of home
+    if (user && user.phone_verified && user.kyc_status === 'verified') {
+      e.preventDefault();
+      navigate('/send');
+    }
+  };
   
   return (
     <div className="min-h-screen">
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2 group">
+            <Link to={user && user.phone_verified && user.kyc_status === 'verified' ? "/send" : "/"} onClick={handleLogoClick} className="flex items-center space-x-2 group">
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
                 <Coins className="w-6 h-6 text-white" />
               </div>

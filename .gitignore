@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Google Cloud credentials - NEVER commit these!
+*service-account*.json
+*-service-account*.json
+service-account-key.json
+# OAuth client secrets (different from service account keys)
+client_secret_*.json
