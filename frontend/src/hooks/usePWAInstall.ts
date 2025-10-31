@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -20,6 +20,7 @@ interface UsePWAInstallReturn {
 
 export const usePWAInstall = (): UsePWAInstallReturn => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
@@ -58,6 +59,7 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
         eventType: e.type
       });
       setDeferredPrompt(promptEvent);
+      deferredPromptRef.current = promptEvent;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -76,7 +78,6 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       clearTimeout(timeoutId);
-      clearTimeout(debugTimeout);
       clearInterval(intervalId);
     };
   }, []);
@@ -100,45 +101,80 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
 
   const installApp = async (): Promise<boolean> => {
     try {
-      // Wait a moment in case the event fires right after user interaction
-      if (!deferredPrompt) {
-        console.log('Waiting for install prompt...');
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // Check if service worker is registered (required for PWA install)
+      let swRegistered = false;
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          swRegistered = registrations.length > 0;
+          console.log('Service Worker registered:', swRegistered, 'Count:', registrations.length);
+        } catch (swError) {
+          console.warn('Error checking service worker:', swError);
+        }
       }
 
-      if (deferredPrompt) {
-        console.log('Triggering install prompt...', deferredPrompt);
+      // Wait a moment in case the event fires right after user interaction
+      // Chrome sometimes delays the event until user gesture
+      if (!deferredPrompt) {
+        console.log('Waiting for install prompt (may take a moment)...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check again after wait
+        // The state might have updated
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      // Use ref to get the latest prompt (closure might be stale)
+      const currentPrompt = deferredPromptRef.current || deferredPrompt;
+      
+      if (currentPrompt) {
+        console.log('✅ Triggering install prompt...', currentPrompt);
         try {
           // Show the install prompt
-          await deferredPrompt.prompt();
+          await currentPrompt.prompt();
           
           // Wait for the user to respond
-          const { outcome } = await deferredPrompt.userChoice;
+          const { outcome } = await currentPrompt.userChoice;
           
           if (outcome === 'accepted') {
-            console.log('User accepted the install prompt');
+            console.log('✅ User accepted the install prompt - App should install now!');
             // Clear the prompt after successful installation
             setDeferredPrompt(null);
+            deferredPromptRef.current = null;
             return true;
           } else {
             console.log('User dismissed the install prompt');
             return false;
           }
-        } catch (promptError) {
-          console.error('Error showing install prompt:', promptError);
+        } catch (promptError: any) {
+          console.error('❌ Error showing install prompt:', promptError);
+          console.error('Error details:', {
+            message: promptError?.message,
+            name: promptError?.name,
+            stack: promptError?.stack
+          });
           // If prompt fails, return false so UI can handle it
           return false;
         }
       } else {
-        console.warn('No deferred prompt available. PWA may already be installed or browser doesn\'t support it.');
-        console.log('PWA Installation Requirements Check:');
-        console.log('- HTTPS: ', window.location.protocol === 'https:' || window.location.hostname === 'localhost');
-        console.log('- Service Worker: ', 'serviceWorker' in navigator);
-        console.log('- Manifest: Check DevTools > Application > Manifest');
+        console.warn('⚠️ No deferred prompt available.');
+        console.log('🔍 PWA Installation Requirements Check:');
+        console.log('   - HTTPS/Localhost:', window.location.protocol === 'https:' || window.location.hostname === 'localhost');
+        console.log('   - Service Worker registered:', swRegistered);
+        console.log('   - Service Worker supported:', 'serviceWorker' in navigator);
+        console.log('   - Manifest: Check DevTools > Application > Manifest');
+        console.log('   - Current URL:', window.location.href);
+        
+        // The prompt may not fire if:
+        // 1. App already installed
+        // 2. User previously dismissed it
+        // 3. PWA criteria not fully met
+        // 4. Browser doesn't support programmatic install
+        
         return false;
       }
     } catch (error) {
-      console.error('Error installing app:', error);
+      console.error('❌ Error installing app:', error);
       return false;
     }
   };
