@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Wallet, LogOut, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { useKYC } from '../context/KYCContext';
+import { useAuth } from '../context/AuthContext';
 
 const WalletConnect = () => {
   const { connect, disconnect, isConnected, account, provider } = useWallet();
-  const { logout, user } = useKYC();
+  const { logout: logoutKYC, user } = useKYC();
+  const { logout: logoutAuth } = useAuth();
+  const navigate = useNavigate();
   const [networkName, setNetworkName] = useState<string>('');
   const [isSepolia, setIsSepolia] = useState<boolean>(false);
 
@@ -30,8 +34,11 @@ const WalletConnect = () => {
   const handleLogout = () => {
     // Disconnect wallet
     disconnect();
-    // Clear user data
-    logout();
+    // Clear user data from both contexts
+    logoutKYC();
+    logoutAuth();
+    // Redirect to onboarding page
+    navigate('/onboarding', { replace: true });
   };
 
   if (isConnected) {

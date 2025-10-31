@@ -84,10 +84,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Always use mock mode for development
       if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-        // Mock mode - ALWAYS accept any OTP for development
-        console.log(`🎯 Mock OTP verification for ${phone}: ${otp || 'empty'} (BYPASSING OTP VERIFICATION)`);
+        // Mock mode - Validate OTP format (must be 6 digits)
+        // In development, accept any 6-digit OTP, but still require it to be entered
+        if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+          console.log(`⚠️ Mock OTP verification failed: Invalid OTP format. Expected 6 digits, got: ${otp || 'empty'}`);
+          return { success: false, error: 'Please enter a valid 6-digit OTP' };
+        }
         
-        // In mock mode, ALWAYS proceed to user creation/login regardless of OTP
+        console.log(`🎯 Mock OTP verification for ${phone}: ${otp} (ACCEPTED)`);
 
         // Check if user exists in localStorage
         const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
@@ -191,8 +195,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('🚪 [AUTH] Logging out user');
     setUser(null);
+    // Clear user session - this is the ONLY way user data should be cleared
     localStorage.removeItem('user');
+    // Note: mock_users is kept for test data, but the active session is cleared
+    // This ensures that after logout, user must log in again
   };
 
   const refreshUser = async () => {
@@ -220,21 +228,105 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Enhanced error logging for debugging
+        console.warn('⚠️ Supabase query error:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
       
       setUser(data);
       localStorage.setItem('user', JSON.stringify(data));
-    } catch (error) {
-      console.error('Error refreshing user:', error);
+    } catch (error: any) {
+      // Only log if it's not a mock mode or expected error
+      if (error?.code !== 'PGRST116') { // PGRST116 = not found, which is expected sometimes
+        console.error('❌ Error refreshing user:', {
+          message: error?.message,
+          code: error?.code,
+          user_id: user?.id
+        });
+      }
+      // Silently fail in development - this is expected behavior
+      // The app should continue working with cached user data
     }
   };
 
+  // Persist user to localStorage whenever it changes (except on initial load)
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+      console.log('💾 [AUTH] User state persisted to localStorage');
     }
-    setIsLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        // First check localStorage for quick initial load
+        const savedUser = localStorage.getItem('user');
+        
+        // Check if we're in mock mode
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const isMockMode = !supabaseUrl || supabaseUrl.includes('placeholder');
+        
+        if (savedUser) {
+          let userData = JSON.parse(savedUser);
+          
+          // In mock mode, also check mock_users to get the latest state
+          if (isMockMode) {
+            const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
+            const mockUser = mockUsers.find((u: any) => u.id === userData.id || u.phone === userData.phone);
+            if (mockUser) {
+              // Use the latest data from mock_users
+              userData = mockUser;
+              localStorage.setItem('user', JSON.stringify(mockUser));
+            }
+          }
+          
+          setUser(userData);
+          setIsLoading(false);
+          
+          // Then sync with Supabase if available (real mode)
+          if (!isMockMode) {
+            try {
+              const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userData.id)
+                .single();
+              
+              if (!error && data) {
+                // Update with latest data from Supabase
+                setUser(data);
+                localStorage.setItem('user', JSON.stringify(data));
+                console.log('✅ [AUTH] User synced from Supabase');
+              } else if (error?.code === 'PGRST116') {
+                // User not found in Supabase, clear local storage only if explicitly logged out
+                // Don't clear if it's just a sync issue
+                console.warn('⚠️ [AUTH] User not found in Supabase, but keeping cached user for session persistence');
+                // Keep the cached user - only clear on explicit logout
+              }
+            } catch (syncError) {
+              console.warn('⚠️ [AUTH] Could not sync with Supabase, using cached user:', syncError);
+              // Continue with cached user if sync fails - preserve session
+            }
+          } else {
+            console.log('✅ [AUTH] User loaded from localStorage (mock mode)');
+          }
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ [AUTH] Error loading user:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    loadUser();
   }, []);
 
   return (

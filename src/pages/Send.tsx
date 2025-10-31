@@ -105,7 +105,49 @@ const Send = () => {
     setGasFeeLoading(true);
     try {
       const provider = new ethers.BrowserProvider((window as any).ethereum);
-      const feeData = await provider.getFeeData();
+      // Use safe fee data getter that handles networks without EIP-1559 support
+      let feeData: ethers.FeeData;
+      try {
+        feeData = await provider.getFeeData();
+      } catch (error: any) {
+        // Network doesn't support EIP-1559, use legacy gas price
+        const errorMsg = error?.message || String(error);
+        const isEIP1559Error = errorMsg.includes('maxPriorityFeePerGas') || errorMsg.includes('-32601');
+        if (isEIP1559Error) {
+          console.warn('⚠️ [GAS] Network doesn\'t support EIP-1559, using legacy gas pricing');
+        } else {
+          console.warn('⚠️ [GAS] getFeeData failed, using fallback:', errorMsg);
+        }
+        
+        // Try to get gas price from window.ethereum directly
+        let gasPrice: bigint | null = null;
+        try {
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const gasPriceHex = await window.ethereum.request({ method: 'eth_gasPrice' });
+            if (gasPriceHex && typeof gasPriceHex === 'string') {
+              gasPrice = BigInt(gasPriceHex);
+            }
+          }
+        } catch {
+          // Try provider.send as fallback
+          try {
+            if ('send' in provider && typeof (provider as any).send === 'function') {
+              const result = await (provider as any).send('eth_gasPrice', []);
+              if (result) {
+                gasPrice = typeof result === 'string' ? BigInt(result) : BigInt(result);
+              }
+            }
+          } catch {
+            // Ignore
+          }
+        }
+        
+        feeData = {
+          gasPrice: gasPrice || ethers.parseUnits('20', 'gwei'),
+          maxFeePerGas: null,
+          maxPriorityFeePerGas: null
+        };
+      }
       const gasPrice = feeData.gasPrice || feeData.maxFeePerGas || ethers.parseUnits('20', 'gwei');
       
       // Estimate gas for a simple transaction (21000 gas units)
@@ -187,86 +229,22 @@ const Send = () => {
           return;
         }
 
-        // Proceed with blockchain transaction
+        // Proceed with blockchain transaction - Direct P2P USDT transfer
         setTxStatus('pending');
         
-        if (contractConnected) {
-          try {
-            // Debug contract call first
-            try {
-              const usdtAmountWei = BigInt(Math.floor(parseFloat(usdtAmount) * 1e6));
-              const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
-              await frontendContractService.debugContractCall('INR', usdtAmountWei, txHash);
-            } catch (debugError) {
-              console.warn('⚠️ [DEBUG] Contract debug failed, but continuing with swap attempt');
-            }
-
-            // Use contract for USDT to Fiat swap
-            const hash = await frontendContractService.swapUSDTToFiat('INR', usdtAmount);
-            setTxHash(hash);
-            console.log('🔄 [CONTRACT] USDT to INR swap executed:', hash);
-            // Notify backend
-            try {
-              await paymentsAPI.save({
-                txHash: hash,
-                sender: account!,
-                receiver: merchantAddress,
-                amount: usdtAmount,
-                timestamp: new Date().toISOString(),
-              });
-            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
-          } catch (contractError: any) {
-            console.warn('⚠️ [CONTRACT] Contract swap failed, falling back to mock:', contractError);
-            
-            // Check if this is a contract fallback error
-            if (contractError.message === 'SEPOLIA_GAS_REQUIRED') {
-              console.log('🔄 [CONTRACT] Contract fallback triggered, executing real Sepolia transaction');
-              
-              try {
-                // Execute real Sepolia transaction with actual gas fees
-                const hash = await frontendContractService.executeSepoliaTransaction(
-                  'INR', 
-                  ethers.parseUnits(usdtAmount, 6), 
-                  '0x' + Math.random().toString(16).substr(2, 64)
-                );
-                setTxHash(hash);
-                console.log('✅ [SEPOLIA] Real Sepolia transaction completed:', hash);
-                try {
-                  await paymentsAPI.save({
-                    txHash: hash,
-                    sender: account!,
-                    receiver: merchantAddress,
-                    amount: usdtAmount,
-                    timestamp: new Date().toISOString(),
-                  });
-                } catch (e) { console.warn('⚠️ Save payment failed:', e); }
-                setTxStatus('success');
-                return;
-              } catch (sepoliaError: any) {
-                console.error('❌ [SEPOLIA] Sepolia transaction failed:', sepoliaError);
-                console.log('🔄 [FALLBACK] Falling back to mock transaction');
-                // Fall through to mock transaction
-              }
-            }
-            
-            // Fallback to mock transaction (should not reach here with SEPOLIA_GAS_REQUIRED)
-            const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
-            setTxHash(hash);
-            console.log('✅ [MOCK] Fallback transaction completed:', hash);
-            try {
-              await paymentsAPI.save({
-                txHash: hash,
-                sender: account!,
-                receiver: merchantAddress,
-                amount: usdtAmount,
-                timestamp: new Date().toISOString(),
-              });
-            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
-          }
-        } else {
-          // Fallback to mock transaction
+        try {
+          // Direct USDT transfer (P2P between wallets)
+          console.log('🔄 [P2P] Initiating USDT transfer:', {
+            from: account,
+            to: merchantAddress,
+            amount: usdtAmount
+          });
+          
           const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
           setTxHash(hash);
+          console.log('✅ [P2P] USDT transfer completed:', hash);
+          
+          // Save transaction to backend
           try {
             await paymentsAPI.save({
               txHash: hash,
@@ -275,10 +253,25 @@ const Send = () => {
               amount: usdtAmount,
               timestamp: new Date().toISOString(),
             });
-          } catch (e) { console.warn('⚠️ Save payment failed:', e); }
+            console.log('✅ [P2P] Transaction saved to backend');
+          } catch (e) { 
+            console.warn('⚠️ Save payment failed:', e); 
+          }
+          
+          setTxStatus('success');
+        } catch (transferError: any) {
+          console.error('❌ [P2P] Transfer failed:', transferError);
+          setTxStatus('error');
+          
+          // Show user-friendly error message
+          if (transferError.message?.includes('Insufficient')) {
+            alert('Insufficient USDT balance. Please ensure you have enough USDT in your wallet.');
+          } else if (transferError.message?.includes('user rejected')) {
+            alert('Transaction cancelled by user.');
+          } else {
+            alert(`Transfer failed: ${transferError.message || 'Unknown error'}`);
+          }
         }
-        
-        setTxStatus('success');
       }
     } catch (error) {
       console.error('Transaction error:', error);

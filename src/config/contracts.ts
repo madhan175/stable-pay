@@ -1,9 +1,12 @@
 import { ethers } from 'ethers';
 
 // Contract addresses from deployment.json (deployed on Sepolia)
+// USDT address can be set via VITE_USDT_ADDRESS env variable or will be read from deployment.json
+const ENV_USDT_ADDRESS = (import.meta as any)?.env?.VITE_USDT_ADDRESS || '';
+
 export const CONTRACT_ADDRESSES = {
   swap: '0x39d886A94568EaDa1e08e4005186F3fff2eE84f9', // From deployment.json
-  usdt: '', // USDT contract not deployed - using mock mode
+  usdt: ENV_USDT_ADDRESS || '', // Set VITE_USDT_ADDRESS in .env or update after deploying MockUSDT
 };
 
 // USDT ABI

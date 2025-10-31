@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
-import { CheckCircle, Shield, User, Users, Wallet, CreditCard, Fingerprint, ArrowRight, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, Shield, User, Wallet, Fingerprint, ArrowRight, Camera } from 'lucide-react';
 import PhoneVerification from '../components/PhoneVerification';
 import KYCUpload from '../components/KYCUpload';
-import Intro from './Intro';
-import { useAuth } from '../context/AuthContext';
+import FaceVerification from '../components/FaceVerification';
+import BiometricAuth from '../components/BiometricAuth';
+import WalletQRCode from '../components/WalletQRCode';
 import { useNavigate } from 'react-router-dom';
+import { useWallet } from '../context/WalletContext';
+import { useAuth } from '../context/AuthContext';
 
 type StepKey = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 const steps: { key: StepKey; label: string; icon: React.ElementType }[] = [
   { key: 1, label: 'Intro', icon: User },
   { key: 2, label: 'Phone verification', icon: Shield },
-  { key: 3, label: 'Teen + Guardian KYC', icon: Users },
+  { key: 3, label: 'KYC Verification (18+)', icon: Shield },
   { key: 4, label: 'Face verification', icon: Camera },
   { key: 5, label: 'Biometric / PIN', icon: Fingerprint },
-  { key: 6, label: 'Scanner setup', icon: QrCodeIcon },
+  { key: 6, label: 'Wallet QR Code', icon: QrCodeIcon },
   { key: 7, label: 'Summary', icon: Wallet },
 ];
 
@@ -24,14 +27,21 @@ function QrCodeIcon(props: any) {
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const { account, isConnected } = useWallet();
   const { user } = useAuth();
   const [current, setCurrent] = useState<StepKey>(1);
 
-  // Minimal local state for guardians/teen form
-  const [teen, setTeen] = useState({ fullName: '', dob: '', school: '' });
-  const [guardian, setGuardian] = useState({ fullName: '', relation: '', phone: '' });
+  // If user has completed onboarding (phone verified AND KYC verified),
+  // redirect them immediately - they should not access onboarding again
+  useEffect(() => {
+    if (user && user.phone_verified && user.kyc_status === 'verified') {
+      // User has completed onboarding and data is in Supabase - redirect to home
+      navigate('/home', { replace: true });
+    }
+  }, [user, navigate]);
 
-  const next = () => setCurrent((p) => (p < 6 ? ((p + 1) as StepKey) : p));
+
+  const next = () => setCurrent((p) => (p < 7 ? ((p + 1) as StepKey) : p));
   const prev = () => setCurrent((p) => (p > 2 ? ((p - 1) as StepKey) : p));
 
   const handlePhoneVerified = () => {
@@ -93,48 +103,38 @@ const Onboarding: React.FC = () => {
           )}
 
           {current === 3 && (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="font-semibold text-gray-900">Teen details</div>
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Full name" value={teen.fullName} onChange={(e) => setTeen({ ...teen, fullName: e.target.value })} />
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Date of birth (YYYY-MM-DD)" value={teen.dob} onChange={(e) => setTeen({ ...teen, dob: e.target.value })} />
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="School (optional)" value={teen.school} onChange={(e) => setTeen({ ...teen, school: e.target.value })} />
-                <div className="mt-2">
-                  <div className="text-sm text-gray-600 mb-2">Teen ID document</div>
-                  <KYCUpload onKYCComplete={() => {}} />
+            <div className="max-w-md mx-auto">
+              <div className="mb-4 text-center">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                  <div className="text-sm font-semibold text-blue-900 mb-1">Age Requirement</div>
+                  <div className="text-xs text-blue-700">This platform is only available for users 18 years and older. Your date of birth will be verified from your ID document.</div>
                 </div>
               </div>
-              <div className="space-y-4">
-                <div className="font-semibold text-gray-900">Parent / Guardian</div>
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Full name" value={guardian.fullName} onChange={(e) => setGuardian({ ...guardian, fullName: e.target.value })} />
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Relationship (e.g., Mother)" value={guardian.relation} onChange={(e) => setGuardian({ ...guardian, relation: e.target.value })} />
-                <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Guardian phone (+91...)" value={guardian.phone} onChange={(e) => setGuardian({ ...guardian, phone: e.target.value })} />
-                <div className="mt-2">
-                  <div className="text-sm text-gray-600 mb-2">Guardian ID document</div>
-                  <KYCUpload onKYCComplete={handleKYCComplete} />
-                </div>
-              </div>
+              <KYCUpload onKYCComplete={handleKYCComplete} />
             </div>
           )}
 
           {current === 4 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Real-time face verification</div>
-              <div className="rounded-2xl border-2 border-dashed border-gray-300 h-56 flex items-center justify-center text-gray-500">
-                Camera preview placeholder
-              </div>
-              <div className="text-xs text-gray-500">We will perform liveness checks. For demo, press Next.</div>
+              <div className="text-gray-800 font-semibold text-lg">Real-time face verification</div>
+              <FaceVerification onComplete={next} />
             </div>
           )}
 
           {current === 5 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Enable device security</div>
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
-                <div className="text-sm">Biometric / Face ID</div>
-                <input type="checkbox" className="h-4 w-4" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
+              <div className="text-gray-800 font-semibold text-lg mb-2">Enable Biometric Security</div>
+              <BiometricAuth 
+                onAuthenticated={() => {
+                  console.log('Biometric authentication completed');
+                  // Auto-advance after successful setup
+                  setTimeout(() => next(), 1000);
+                }}
+                onError={(error) => {
+                  console.error('Biometric error:', error);
+                }}
+              />
+              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200 mt-4">
                 <div className="text-sm">Backup PIN</div>
                 <input type="checkbox" className="h-4 w-4" defaultChecked />
               </div>
@@ -143,11 +143,44 @@ const Onboarding: React.FC = () => {
 
           {current === 6 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Scanner setup</div>
-              <div className="rounded-2xl border-2 border-dashed border-gray-300 h-56 flex items-center justify-center text-gray-500">
-                Individual QR/Barcode scanner placeholder
-              </div>
-              <div className="text-xs text-gray-500">Grant camera permissions when prompted. For demo, press Next.</div>
+              <div className="text-gray-800 font-semibold text-lg mb-4">Your Wallet QR Code</div>
+              {isConnected && account ? (
+                <div>
+                  <WalletQRCode 
+                    walletAddress={account} 
+                    size={256}
+                    showDownload={true}
+                  />
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-sm text-blue-800 text-center">
+                      📱 Share this QR code to receive USDT payments. You can also use it to make transactions!
+                    </p>
+                  </div>
+                  <button
+                    onClick={next}
+                    className="w-full mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Continue to Summary
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+                  <Wallet className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-yellow-900 mb-2">Wallet Not Connected</h3>
+                  <p className="text-sm text-yellow-800 mb-4">
+                    Please connect your MetaMask wallet to generate your QR code for transactions.
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    You can also skip this step and connect later from the Receive page.
+                  </p>
+                  <button
+                    onClick={next}
+                    className="mt-4 px-6 py-3 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors font-medium"
+                  >
+                    Skip for Now
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

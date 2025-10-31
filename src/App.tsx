@@ -24,6 +24,8 @@ import Onboarding from './pages/Onboarding';
 import { AuthProvider } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
 import { KYCProvider } from './context/KYCContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 
 function App() {
   return (
@@ -34,19 +36,25 @@ function App() {
           <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
             <Routes>
               <Route path="/" element={<Layout />}>
-                <Route index element={<Onboarding />} />
-                <Route path="send" element={<Send />} />
-                <Route path="login" element={<UserLogin />} />
-                <Route path="home" element={<UserDashboard />} />
-                <Route path="buy" element={<Buy />} />
-                <Route path="history" element={<History />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="receive" element={<Receive />} />
-                <Route path="kyc" element={<KYC />} />
-                <Route path="onboarding" element={<Onboarding />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="intro" element={<Intro />} />
+                {/* Public routes - redirect to dashboard if logged in */}
+                <Route index element={<PublicRoute><Onboarding /></PublicRoute>} />
+                <Route path="onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
+                <Route path="login" element={<PublicRoute><UserLogin /></PublicRoute>} />
+                <Route path="intro" element={<PublicRoute><Intro /></PublicRoute>} />
+                
+                {/* Protected routes - require authentication */}
+                <Route path="send" element={<ProtectedRoute><Send /></ProtectedRoute>} />
+                <Route path="home" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+                <Route path="buy" element={<ProtectedRoute><Buy /></ProtectedRoute>} />
+                <Route path="history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+                <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="receive" element={<ProtectedRoute><Receive /></ProtectedRoute>} />
+                
+                {/* KYC route - accessible during onboarding but protected after login */}
+                <Route path="kyc" element={<ProtectedRoute><KYC /></ProtectedRoute>} />
+                
                 {/* Admin routes */}
+                <Route path="admin" element={<Admin />} />
                 <Route path="admin-login" element={<AdminLogin />} />
                 <Route path="admin/overview" element={<AdminOverview />} />
                 <Route path="admin/users" element={<AdminUsers />} />
