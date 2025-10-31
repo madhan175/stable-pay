@@ -122,31 +122,46 @@ const Home = () => {
             </div>
           )}
           {showInstallInstructions && !isIOS && (
-            <div className="mt-3 bg-blue-50 border-2 border-blue-200 rounded-2xl shadow-sm p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className="text-sm font-semibold text-blue-900">How to Install StablePay</div>
+            <div className="mt-3 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-2xl shadow-lg p-4 sm:p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="text-base font-bold text-blue-900">📱 Install StablePay App</div>
                 <button
                   onClick={() => setShowInstallInstructions(false)}
-                  className="text-blue-600 hover:text-blue-800 text-lg font-bold"
+                  className="text-blue-600 hover:text-blue-800 text-xl font-bold leading-none"
                   aria-label="Close"
                 >
                   ×
                 </button>
               </div>
-              <div className="text-xs sm:text-sm text-blue-800 space-y-2">
-                <p className="font-medium mb-2">For Chrome/Edge:</p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Look for the <strong>Install icon (⊕)</strong> in the address bar (right side)</li>
-                  <li>Click it and select <strong>"Install"</strong></li>
-                </ol>
-                <p className="mt-3 font-medium">OR</p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Click the <strong>menu (⋮)</strong> in the top right</li>
-                  <li>Look for <strong>"Install StablePay"</strong> or <strong>"Install app"</strong> option</li>
-                </ol>
-                <p className="mt-3 text-xs text-blue-600">
-                  💡 If you don't see the install option, make sure you're on HTTPS and the page has loaded completely.
-                </p>
+              <div className="text-sm text-blue-900 space-y-3">
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <p className="font-semibold mb-2 text-blue-800">✨ Quick Install (Chrome/Edge):</p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-bold text-blue-600">1.</span>
+                      <p>Look in your <strong>address bar</strong> (top right of browser)</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-bold text-blue-600">2.</span>
+                      <p>Find the <strong className="text-lg">⊕</strong> <strong>Install icon</strong> (next to the refresh button)</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-bold text-blue-600">3.</span>
+                      <p>Click it and select <strong>"Install"</strong></p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <p className="font-semibold mb-2 text-blue-800">🔄 Alternative Method:</p>
+                  <div className="space-y-1">
+                    <p>1. Click the <strong>three dots menu (⋮)</strong> in the top right</p>
+                    <p>2. Look for <strong>"Install StablePay"</strong> or <strong>"Install app"</strong></p>
+                  </div>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-2 text-xs text-yellow-800">
+                  <p className="font-semibold">💡 Why doesn't the button work?</p>
+                  <p className="mt-1">Chrome may not show the install prompt if you previously dismissed it. But the app is still installable! Just use the install icon in your address bar.</p>
+                </div>
               </div>
             </div>
           )}

@@ -23,6 +23,7 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const eventFiredRef = useRef(false);
 
   useEffect(() => {
     // Check if app is already installed (standalone mode)
@@ -38,13 +39,15 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
       const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
       setIsIOS(isIOSDevice);
       
-      // Debug logging
-      console.log('PWA Install Check:', {
-        isStandalone: isInStandaloneMode,
-        isIOS: isIOSDevice,
-        userAgent: userAgent,
-        hasServiceWorker: 'serviceWorker' in navigator
-      });
+      // Debug logging (less frequent)
+      if (!eventFiredRef.current) {
+        console.log('PWA Install Check:', {
+          isStandalone: isInStandaloneMode,
+          isIOS: isIOSDevice,
+          userAgent: userAgent.substring(0, 50) + '...',
+          hasServiceWorker: 'serviceWorker' in navigator
+        });
+      }
     };
 
     checkStandalone();
@@ -52,6 +55,7 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     // Handle beforeinstallprompt event (Android/Chrome/Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
       console.log('✅ beforeinstallprompt event fired!', e);
+      eventFiredRef.current = true;
       e.preventDefault();
       const promptEvent = e as BeforeInstallPromptEvent;
       console.log('Prompt event details:', {
@@ -64,16 +68,38 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Note: beforeinstallprompt may fire later or not at all
-    // This is normal if app already installed or PWA criteria not met
+    // Check if Chrome shows install option in UI (alternative detection)
+    const checkChromeInstallability = () => {
+      // Chrome sometimes doesn't fire beforeinstallprompt if user previously dismissed
+      // But the app might still be installable via browser UI
+      if ('serviceWorker' in navigator && !isStandalone) {
+        try {
+          // Check manifest
+          const manifestLink = document.querySelector('link[rel="manifest"]');
+          if (manifestLink) {
+            console.log('✅ Manifest link found');
+          }
+        } catch (e) {
+          console.warn('Error checking manifest:', e);
+        }
+      }
+    };
 
-    // Check again after a short delay to ensure all checks are done
-    const timeoutId = setTimeout(checkStandalone, 500);
+    // Initial check
+    checkChromeInstallability();
+
+    // Check again after a short delay
+    const timeoutId = setTimeout(() => {
+      checkStandalone();
+      checkChromeInstallability();
+    }, 500);
 
     // Also check periodically for the event (in case it fires later)
     const intervalId = setInterval(() => {
-      checkStandalone();
-    }, 2000);
+      if (!eventFiredRef.current) {
+        checkStandalone();
+      }
+    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -113,15 +139,14 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
         }
       }
 
-      // Wait a moment in case the event fires right after user interaction
-      // Chrome sometimes delays the event until user gesture
-      if (!deferredPrompt) {
+      // Wait for the prompt - Chrome may delay it until user gesture
+      if (!deferredPromptRef.current && !deferredPrompt) {
         console.log('Waiting for install prompt (may take a moment)...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check again after wait
-        // The state might have updated
-        await new Promise(resolve => setTimeout(resolve, 0));
+        // Wait longer and check multiple times
+        for (let i = 0; i < 5; i++) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          if (deferredPromptRef.current || deferredPrompt) break;
+        }
       }
 
       // Use ref to get the latest prompt (closure might be stale)
@@ -150,10 +175,8 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
           console.error('❌ Error showing install prompt:', promptError);
           console.error('Error details:', {
             message: promptError?.message,
-            name: promptError?.name,
-            stack: promptError?.stack
+            name: promptError?.name
           });
-          // If prompt fails, return false so UI can handle it
           return false;
         }
       } else {
@@ -164,12 +187,11 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
         console.log('   - Service Worker supported:', 'serviceWorker' in navigator);
         console.log('   - Manifest: Check DevTools > Application > Manifest');
         console.log('   - Current URL:', window.location.href);
-        
-        // The prompt may not fire if:
-        // 1. App already installed
-        // 2. User previously dismissed it
-        // 3. PWA criteria not fully met
-        // 4. Browser doesn't support programmatic install
+        console.log('');
+        console.log('💡 IMPORTANT: If beforeinstallprompt didn\'t fire, you can still install:');
+        console.log('   1. Look for the install icon (⊕) in Chrome\'s address bar');
+        console.log('   2. Or go to Chrome menu (⋮) > "Install StablePay"');
+        console.log('   3. The app is installable even if the event didn\'t fire!');
         
         return false;
       }
@@ -195,4 +217,3 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     showManualInstructions: showManualInstallInstructions,
   };
 };
-
