@@ -19,6 +19,7 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['finance', 'business', 'productivity'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -35,6 +36,21 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any',
+          },
+        ],
+        shortcuts: [
+          {
+            name: 'Send Payment',
+            short_name: 'Send',
+            description: 'Send USDT payment',
+            url: '/send',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }],
           },
         ],
       },

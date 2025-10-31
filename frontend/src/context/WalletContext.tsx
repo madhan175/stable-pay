@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { userAPI } from '../services/api';
+import { isMobileDevice, isMetaMaskInstalled, openMetaMaskMobile } from '../utils/mobileWallet';
 
 interface WalletContextType {
   account: string | null;
@@ -8,6 +9,7 @@ interface WalletContextType {
   provider: ethers.BrowserProvider | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  isMobile: boolean;
 }
 
 export const WalletContext = createContext<WalletContextType | null>(null);
@@ -23,8 +25,77 @@ export const useWallet = () => {
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [isMobile] = useState<boolean>(isMobileDevice());
 
   const connect = async () => {
+    const mobile = isMobileDevice();
+    
+    // For mobile devices without MetaMask browser extension
+    if (mobile && !isMetaMaskInstalled()) {
+      try {
+        console.log('📱 [METAMASK] Opening MetaMask mobile app...');
+        
+        // Store connection attempt in localStorage
+        localStorage.setItem('metamask_connection_attempt', Date.now().toString());
+        
+        await openMetaMaskMobile();
+        
+        // Set up focus listener to check for connection when user returns
+        const handleFocus = async () => {
+          console.log('👀 [METAMASK] Page regained focus, checking for connection...');
+          
+          // Wait a moment for any injection to complete
+          setTimeout(async () => {
+            if (typeof window.ethereum !== 'undefined') {
+              try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                  await handleConnection(accounts);
+                  window.removeEventListener('focus', handleFocus);
+                  localStorage.removeItem('metamask_connection_attempt');
+                }
+              } catch (error) {
+                console.error('❌ [METAMASK] Error checking connection after focus:', error);
+              }
+            }
+          }, 1000);
+        };
+        
+        window.addEventListener('focus', handleFocus);
+        
+        // Also check periodically (in case focus event doesn't fire)
+        const checkInterval = setInterval(async () => {
+          if (typeof window.ethereum !== 'undefined') {
+            try {
+              const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+              if (accounts.length > 0) {
+                await handleConnection(accounts);
+                clearInterval(checkInterval);
+                window.removeEventListener('focus', handleFocus);
+                localStorage.removeItem('metamask_connection_attempt');
+              }
+            } catch (error) {
+              // Silent fail
+            }
+          }
+          
+          // Stop checking after 30 seconds
+          const attemptTime = localStorage.getItem('metamask_connection_attempt');
+          if (attemptTime && Date.now() - parseInt(attemptTime) > 30000) {
+            clearInterval(checkInterval);
+            window.removeEventListener('focus', handleFocus);
+          }
+        }, 2000);
+        
+        return;
+      } catch (error) {
+        console.error('❌ [METAMASK] Failed to open MetaMask mobile app:', error);
+        alert('Please install MetaMask app from the App Store (iOS) or Google Play Store (Android)');
+        return;
+      }
+    }
+    
+    // Standard connection flow for desktop or mobile with extension
     if (typeof window.ethereum !== 'undefined') {
       try {
         console.log('🔗 [METAMASK] Connecting to MetaMask...');
@@ -34,57 +105,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           method: 'eth_requestAccounts' 
         });
         
-        console.log('✅ [METAMASK] Account connected:', accounts[0]);
-        
-        // Create provider
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        
-        // Check current network
-        const network = await provider.getNetwork();
-        console.log('🌐 [METAMASK] Current network:', network.name, network.chainId);
-        
-        // Switch to Sepolia if not already on it (where contracts are deployed)
-        if (network.chainId !== 11155111n) {
-          console.log('🔄 [METAMASK] Switching to Sepolia testnet...');
-          try {
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID (11155111)
-            });
-            console.log('✅ [METAMASK] Switched to Sepolia testnet');
-          } catch (switchError: any) {
-            // If Sepolia is not added, add it
-            if (switchError.code === 4902) {
-              console.log('➕ [METAMASK] Adding Sepolia testnet...');
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0xaa36a7', // 11155111 in hex
-                  chainName: 'Sepolia Test Network',
-                  nativeCurrency: {
-                    name: 'SepoliaETH',
-                    symbol: 'ETH',
-                    decimals: 18,
-                  },
-                  rpcUrls: ['https://sepolia.infura.io/v3/'],
-                  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
-                }],
-              });
-              console.log('✅ [METAMASK] Sepolia testnet added and switched');
-            } else {
-              console.error('❌ [METAMASK] Failed to switch to Sepolia:', switchError);
-              console.log('⚠️ [METAMASK] Continuing with current network - contracts may not be available');
-            }
-          }
+        if (accounts.length === 0) {
+          throw new Error('No accounts found');
         }
         
-        setProvider(provider);
-        setAccount(accounts[0]);
+        await handleConnection(accounts);
         
-        // Link wallet to user if user is logged in
-        linkWalletToUser(accounts[0]);
-        
-        console.log('🎉 [METAMASK] Successfully connected to Sepolia testnet');
       } catch (error: any) {
         console.error('❌ [METAMASK] Failed to connect wallet:', error);
         if (error.code === 4001) {
@@ -92,12 +118,74 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } else if (error.code === 4902) {
           alert('Please add Sepolia testnet to your MetaMask');
         } else {
-          alert('Failed to connect wallet. Please try again.');
+          if (mobile) {
+            alert('Failed to connect. Make sure MetaMask app is installed and try again.');
+          } else {
+            alert('Failed to connect wallet. Please try again.');
+          }
         }
       }
     } else {
-      alert('Please install MetaMask extension to continue!');
+      if (mobile) {
+        alert('Please install MetaMask app from the App Store (iOS) or Google Play Store (Android)');
+      } else {
+        alert('Please install MetaMask extension to continue!');
+      }
     }
+  };
+
+  const handleConnection = async (accounts: string[]) => {
+    console.log('✅ [METAMASK] Account connected:', accounts[0]);
+    
+    // Create provider
+    const provider = new ethers.BrowserProvider(window.ethereum!);
+    
+    // Check current network
+    const network = await provider.getNetwork();
+    console.log('🌐 [METAMASK] Current network:', network.name, network.chainId);
+    
+    // Switch to Sepolia if not already on it (where contracts are deployed)
+    if (network.chainId !== 11155111n) {
+      console.log('🔄 [METAMASK] Switching to Sepolia testnet...');
+      try {
+        await window.ethereum!.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xaa36a7' }], // Sepolia chain ID (11155111)
+        });
+        console.log('✅ [METAMASK] Switched to Sepolia testnet');
+      } catch (switchError: any) {
+        // If Sepolia is not added, add it
+        if (switchError.code === 4902) {
+          console.log('➕ [METAMASK] Adding Sepolia testnet...');
+          await window.ethereum!.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0xaa36a7', // 11155111 in hex
+              chainName: 'Sepolia Test Network',
+              nativeCurrency: {
+                name: 'SepoliaETH',
+                symbol: 'ETH',
+                decimals: 18,
+              },
+              rpcUrls: ['https://sepolia.infura.io/v3/'],
+              blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+            }],
+          });
+          console.log('✅ [METAMASK] Sepolia testnet added and switched');
+        } else {
+          console.error('❌ [METAMASK] Failed to switch to Sepolia:', switchError);
+          console.log('⚠️ [METAMASK] Continuing with current network - contracts may not be available');
+        }
+      }
+    }
+    
+    setProvider(provider);
+    setAccount(accounts[0]);
+    
+    // Link wallet to user if user is logged in
+    linkWalletToUser(accounts[0]);
+    
+    console.log('🎉 [METAMASK] Successfully connected to Sepolia testnet');
   };
 
   const disconnect = () => {
@@ -202,6 +290,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         provider,
         connect,
         disconnect,
+        isMobile,
       }}
     >
       {children}
