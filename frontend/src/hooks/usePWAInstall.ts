@@ -102,10 +102,10 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
 
   // Show button if:
   // 1. Not already in standalone mode
-  // 2. Either we have a deferred prompt OR it's iOS (which doesn't use beforeinstallprompt)
-  // 3. Or if service worker is supported (PWA capable browser)
+  // 2. Show for all modern browsers (service worker support means PWA capable)
+  // This ensures the button is visible even if beforeinstallprompt hasn't fired yet
   const isPWACapable = 'serviceWorker' in navigator;
-  const canInstall = !isStandalone && (deferredPrompt !== null || isIOS || isPWACapable);
+  const canInstall = !isStandalone && isPWACapable;
 
   return {
     deferredPrompt,

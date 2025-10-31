@@ -29,12 +29,21 @@ const Home = () => {
 
   // Debug: Log install status
   useEffect(() => {
-    console.log('Home Page - Install Status:', {
+    const status = {
       canInstall,
       isIOS,
       isStandalone,
       hasDeferredPrompt: !!deferredPrompt,
-    });
+      hasServiceWorker: 'serviceWorker' in navigator,
+      userAgent: navigator.userAgent,
+    };
+    console.log('Home Page - Install Status:', status);
+    // Force show button if service worker is supported and not standalone
+    if ('serviceWorker' in navigator && !isStandalone) {
+      console.log('✅ Button should be visible - Service worker supported and not in standalone mode');
+    } else {
+      console.warn('⚠️ Button hidden - Check reasons above');
+    }
   }, [canInstall, isIOS, isStandalone, deferredPrompt]);
 
   useEffect(() => {
@@ -82,7 +91,7 @@ const Home = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24">
         {/* Download/Install App Button - Always visible when can install */}
-        {canInstall && !isStandalone && (
+        {!isStandalone && (
           <div className="mb-4">
             <button
               onClick={handleDownloadClick}
