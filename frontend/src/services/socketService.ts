@@ -35,7 +35,30 @@ class SocketService {
         this.socket = null;
       }
 
-      const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // Get server URL from environment variable
+      let serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      // Check if we're in production and VITE_API_URL is not set
+      if (import.meta.env.PROD && (!import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL === 'undefined')) {
+        console.warn('⚠️ [SOCKET] VITE_API_URL not set in production! WebSocket will not connect.');
+        console.warn('⚠️ [SOCKET] Please set VITE_API_URL in Vercel environment variables.');
+        console.warn('⚠️ [SOCKET] Go to: Vercel Dashboard → Your Project → Settings → Environment Variables');
+        return null;
+      }
+      
+      // Ensure URL doesn't have trailing slash
+      serverUrl = serverUrl.replace(/\/+$/, '');
+      
+      // Log the URL being used (helps with debugging)
+      console.log('🔌 [SOCKET] Connecting to:', serverUrl);
+      console.log('🔌 [SOCKET] Environment variable:', import.meta.env.VITE_API_URL || 'NOT SET (using default)');
+      
+      // Validate URL format
+      if (!serverUrl || serverUrl === 'undefined' || serverUrl === 'http://localhost:5000' && import.meta.env.PROD) {
+        console.error('❌ [SOCKET] Invalid server URL. Check VITE_API_URL environment variable.');
+        console.error('❌ [SOCKET] Cannot use localhost in production. Set VITE_API_URL to your backend URL.');
+        return null;
+      }
       
       this.socket = io(serverUrl, {
         transports: ['websocket', 'polling'],
@@ -43,6 +66,9 @@ class SocketService {
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
         timeout: 20000,
+        // Force upgrade to secure WebSocket for HTTPS
+        upgrade: true,
+        rememberUpgrade: true,
       });
 
       // Add error handlers to prevent unhandled promise rejections
@@ -56,6 +82,8 @@ class SocketService {
 
       this.socket.on('connect_error', (error) => {
         console.warn('⚠️ [SOCKET] Connection error:', error.message);
+        console.warn('⚠️ [SOCKET] Attempted URL:', serverUrl);
+        console.warn('⚠️ [SOCKET] Make sure VITE_API_URL is set in Vercel environment variables');
         // Don't throw - let it reconnect automatically
       });
 
