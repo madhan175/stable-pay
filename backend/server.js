@@ -16,11 +16,28 @@ const contractService = require('./services/contractService');
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:5174'
-];
+
+// CORS configuration for production (Render) and development
+const getAllowedOrigins = () => {
+  const origins = [
+    'http://localhost:5173',
+    'http://localhost:5174'
+  ];
+  
+  // Add production frontend URLs
+  if (process.env.FRONTEND_URL) {
+    origins.push(process.env.FRONTEND_URL);
+  }
+  
+  // Add Vercel deployment URLs (comma-separated)
+  if (process.env.VERCEL_FRONTEND_URLS) {
+    origins.push(...process.env.VERCEL_FRONTEND_URLS.split(','));
+  }
+  
+  return origins;
+};
+
+const allowedOrigins = getAllowedOrigins();
 
 const io = socketIo(server, {
   cors: {
@@ -625,20 +642,28 @@ app.post('/tx/execute/:transactionId', async (req, res) => {
 // Store a verified payment and broadcast via socket
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { txHash, sender, receiver, amount, timestamp } = req.body || {};
+    const { txHash, sender, receiver, amount, timestamp, gasUsed, gasPrice, blockNumber } = req.body || {};
     if (!txHash || !sender || !receiver || !amount) {
       return res.status(400).json({ error: 'txHash, sender, receiver, amount required' });
     }
 
     // Optional: verify transaction onchain if RPC provided
     let status = 'success';
+    let actualGasUsed = gasUsed;
+    let actualBlockNumber = blockNumber;
     try {
       const rpcUrl = process.env.ETHEREUM_RPC_URL;
       if (rpcUrl && txHash.startsWith('0x')) {
         const { ethers } = require('ethers');
         const provider = new ethers.JsonRpcProvider(rpcUrl);
         const receipt = await provider.getTransactionReceipt(txHash);
-        if (!receipt || receipt.status !== 1) status = 'pending';
+        if (!receipt || receipt.status !== 1) {
+          status = 'pending';
+        } else {
+          // Get actual gas used from receipt
+          actualGasUsed = receipt.gasUsed.toString();
+          actualBlockNumber = receipt.blockNumber.toString();
+        }
       }
     } catch (e) {
       console.warn('⚠️ TX verify skipped:', e?.message || e);
@@ -650,9 +675,55 @@ app.post('/api/transactions', async (req, res) => {
       receiver,
       amount: String(amount),
       status,
-      timestamp: timestamp || new Date().toISOString()
+      timestamp: timestamp || new Date().toISOString(),
+      gas_used: actualGasUsed,
+      block_number: actualBlockNumber
     };
     payments.unshift(record);
+
+    // Try to save to Supabase if we have user context
+    try {
+      // Try to find user by wallet address
+      const userData = await supabaseService.supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', sender.toLowerCase())
+        .single();
+      
+      if (userData && !userData.error && userData.data) {
+        const userId = userData.data.id;
+        
+        // Calculate USD/USDT amounts (approximate)
+        const amountUsdt = parseFloat(amount);
+        const amountInr = amountUsdt * 83; // Approximate conversion
+        
+        // Save to Supabase transactions table
+        const supabaseTx = await supabaseService.createTransaction({
+          user_id: userId,
+          recipient_wallet: receiver,
+          amount_inr: amountInr,
+          amount_usd: amountUsdt,
+          amount_usdt: amountUsdt,
+          requires_kyc: false,
+          kyc_verified: false,
+          status: status,
+          tx_hash: txHash,
+          block_number: actualBlockNumber ? parseInt(actualBlockNumber) : null,
+          gas_used: actualGasUsed ? parseInt(actualGasUsed) : null
+        });
+        
+        console.log('✅ [TRANSACTION] Saved to Supabase:', supabaseTx.id);
+      } else {
+        // Try to find or create user by searching all recent users
+        // This is a fallback when wallet isn't linked to a user yet
+        console.log('⚠️ [TRANSACTION] User not found for wallet:', sender);
+        console.log('⚠️ [TRANSACTION] Transaction saved to in-memory store only');
+        console.log('💡 [TRANSACTION] Tip: Link wallet address to user account during login/registration');
+      }
+    } catch (supabaseError) {
+      console.warn('⚠️ [TRANSACTION] Supabase save failed (continuing with in-memory):', supabaseError.message);
+      // Continue anyway - transaction is still saved in memory
+    }
 
     // Emit real-time event
     io.emit('new-payment', record);
@@ -700,7 +771,7 @@ app.get('/contract/health', async (req, res) => {
     const adminAddress = await contractService.getAdminAddress();
     res.json({ 
       status: 'OK', 
-      contractAddress: '0x44D5AceaB446F335853EEDebdcbE6fFD94d7d51C',
+      contractAddress: '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4',
       adminAddress,
       timestamp: new Date().toISOString()
     });

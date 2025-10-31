@@ -1,6 +1,16 @@
-# Stablecoin Pay - UPI to USDT Bridge
+# StablePay 2.0 - UPI to USDT Bridge
 
 A decentralized application that enables users in India to pay merchants in INR via UPI, while merchants instantly receive USDT stablecoins in their wallet.
+
+## 📁 Project Structure
+
+```
+StablePay2.0/
+├── frontend/          # React + Vite frontend (Deploy to Vercel)
+├── backend/          # Node.js + Express backend (Deploy to Render)
+├── contarcts/        # Smart contracts (Deploy to Sepolia)
+└── DEPLOYMENT.md     # Deployment guide
+```
 
 ## 🚀 Features
 
@@ -22,6 +32,7 @@ A decentralized application that enables users in India to pay merchants in INR 
 - React Router DOM
 
 **Backend:**
+- Node.js + Express
 - Supabase (Database & Storage)
 - Real-time subscriptions
 
@@ -36,18 +47,71 @@ Before running the application, you need:
 
 1. **MetaMask Extension** installed in your browser
 2. **Sepolia ETH** for gas fees (get from [Sepolia Faucet](https://sepoliafaucet.com/))
-3. **Contract Addresses** - Update the following in `src/utils/blockchain.ts`:
-   ```typescript
-   const FIAT_USDT_SWAP_CONTRACT = 'YOUR_DEPLOYED_CONTRACT_ADDRESS';
-   const USDT_CONTRACT_ADDRESS = 'YOUR_USDT_CONTRACT_ADDRESS';
-   ```
+3. **Contract Addresses** - Deploy contracts first (see `contarcts/` folder)
+
+## 🔧 Development Setup
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+See [frontend/README.md](./frontend/README.md) for details.
+
+### Backend Setup
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+See [backend/README.md](./backend/README.md) for details.
+
+### Smart Contracts
+
+```bash
+cd contarcts
+npm install
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+See [contarcts/README.md](./contarcts/README.md) for details.
+
+## 🌐 Deployment
+
+### Quick Deployment Guide
+
+1. **Deploy Backend to Render**
+   - See [backend/RENDER-DEPLOYMENT.md](./backend/RENDER-DEPLOYMENT.md)
+   - Get your backend URL (e.g., `https://stablepay-backend.onrender.com`)
+
+2. **Deploy Frontend to Vercel**
+   - See [frontend/README.md](./frontend/README.md)
+   - Set `VITE_API_URL` to your backend URL
+
+3. **Update Backend CORS**
+   - Add frontend Vercel URL to `ALLOWED_ORIGINS`
+   - Restart backend service
+
+For complete deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+## 📚 Documentation
+
+- **Frontend**: [frontend/README.md](./frontend/README.md) - Frontend setup and Vercel deployment
+- **Backend**: [backend/RENDER-DEPLOYMENT.md](./backend/RENDER-DEPLOYMENT.md) - Backend setup and Render deployment
+- **Contracts**: [contarcts/README.md](./contarcts/README.md) - Smart contract deployment
+- **Deployment**: [DEPLOYMENT.md](./DEPLOYMENT.md) - Complete deployment guide
 
 ## 🔧 Setup Instructions
 
 1. **Clone and Install**
    ```bash
    git clone <repository-url>
-   cd stablecoin-pay
+   cd StablePay2.0
    npm install
    ```
 

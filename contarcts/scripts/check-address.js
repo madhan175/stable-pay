@@ -1,7 +1,19 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  let deployer;
+  try {
+    [deployer] = await ethers.getSigners();
+  } catch (error) {
+    console.error("❌ Error getting signers:", error.message);
+    console.log("\n💡 This usually means PRIVATE_KEY is not set or invalid in .env file.");
+    console.log("\n📝 To fix this:");
+    console.log("   1. Open contarcts/.env file");
+    console.log("   2. Set PRIVATE_KEY=your_64_character_hex_private_key");
+    console.log("   3. Make sure to remove any '0x' prefix from the private key");
+    console.log("   4. The private key should be exactly 64 hex characters");
+    process.exit(1);
+  }
   const deployerAddress = await deployer.getAddress();
   const deployerBalance = await ethers.provider.getBalance(deployerAddress);
   const network = await ethers.provider.getNetwork();

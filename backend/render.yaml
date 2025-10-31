@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: stablepay-backend
+    env: node
+    region: singapore
+    branch: main
+    rootDir: backend
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+

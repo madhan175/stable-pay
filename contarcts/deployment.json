@@ -1,10 +1,9 @@
 {
-  "contractAddress": "0x39d886A94568EaDa1e08e4005186F3fff2eE84f9",
-  "usdtAddress": "",
-  "admin": "0x673109Cb9292ad309a79db05a0f0D39327A6a2E6",
+  "contractAddress": "0xA59CE17F2ea6946F48386B4bD7884512AeC674F4",
+  "usdtAddress": "0x61Ddf50869436D159090bBAC40f0fe7e4Ffcd4cD",
+  "admin": "0x5De853eA28F8a851677C3A158DB617ea726b2B7D",
   "network": "sepolia",
-  "chainId": 11155111,
-  "blockNumber": 9478817,
-  "timestamp": "2025-10-24T08:11:56.047Z",
-  "note": "USDT contract not deployed yet. Deploy MockUSDT using: npx hardhat run scripts/deploy-mock-usdt.js --network sepolia. Then update this file with the usdtAddress."
+  "chainId": "11155111",
+  "blockNumber": 9530527,
+  "timestamp": "2025-10-31T14:09:58.241Z"
 }
