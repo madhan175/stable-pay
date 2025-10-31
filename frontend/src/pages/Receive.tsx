@@ -159,7 +159,7 @@ const Receive = () => {
   }, [account]);
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 lg:py-16">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 lg:py-16 overflow-x-hidden w-full max-w-full">
       <div className="text-center mb-6 sm:mb-12">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
           Merchant Dashboard

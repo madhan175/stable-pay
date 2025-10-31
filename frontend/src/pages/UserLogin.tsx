@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const UserLogin = () => {
   return (
-    <div className="max-w-xl mx-auto px-3 sm:px-4 lg:px-8 py-8 sm:py-16">
+    <div className="max-w-xl mx-auto px-3 sm:px-4 lg:px-8 py-8 sm:py-16 overflow-x-hidden w-full max-w-full">
       <div className="text-center mb-6 sm:mb-10">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">StablePay</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-2">Pay Smart. Stay Stable.</p>

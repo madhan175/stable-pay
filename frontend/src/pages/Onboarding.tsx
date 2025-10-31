@@ -48,8 +48,8 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6 sm:py-12">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6 sm:py-12 overflow-x-hidden w-full max-w-full">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 w-full">
         <div className="text-center mb-6 sm:mb-10">
           <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
             <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
@@ -58,8 +58,8 @@ const Onboarding: React.FC = () => {
           <p className="text-sm sm:text-base text-gray-600">Complete onboarding in a few quick steps</p>
         </div>
 
-        <div className="flex justify-center mb-6 sm:mb-10 overflow-x-auto pb-2 scrollbar-hide -mx-3 sm:-mx-0 px-3 sm:px-0">
-          <div className="flex items-center space-x-3 sm:space-x-6">
+        <div className="flex justify-center mb-6 sm:mb-10 overflow-x-auto pb-2 scrollbar-hide w-full max-w-full">
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-6 flex-shrink-0">
             {steps.map((s, i) => {
               const Icon = s.icon;
               const isActive = s.key === current;
@@ -76,7 +76,7 @@ const Onboarding: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 w-full max-w-full overflow-x-hidden">
           {current === 1 && (
             <div className="max-w-lg mx-auto text-center space-y-4">
               <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 rounded-2xl h-48 flex items-center justify-center text-white">

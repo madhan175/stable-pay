@@ -87,8 +87,8 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white overflow-x-hidden w-full max-w-full">
+      <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24 w-full">
         {/* Download/Install App Button - Always visible (never removed) */}
         <div className="mb-4">
           {!isStandalone ? (
@@ -251,7 +251,7 @@ const Home = () => {
         {/* People */}
         <div className="mt-6 sm:mt-8">
           <div className="text-base sm:text-lg font-bold text-gray-900 mb-3">Recent Contacts</div>
-          <div className="flex items-center space-x-4 sm:space-x-6 overflow-x-auto pb-2 -mx-3 sm:-mx-0 px-3 sm:px-0 scrollbar-hide">
+          <div className="flex items-center space-x-4 sm:space-x-6 overflow-x-auto pb-2 scrollbar-hide w-full max-w-full">
             {people.map((p) => (
               <Link 
                 key={p.name} 

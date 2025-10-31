@@ -39,6 +39,7 @@ function App() {
                 {/* Public routes - redirect to dashboard if logged in */}
                 <Route index element={<PublicRoute><Intro /></PublicRoute>} />
                 <Route path="intro" element={<PublicRoute><Intro /></PublicRoute>} />
+                <Route path="landing" element={<PublicRoute><Landing /></PublicRoute>} />
                 <Route path="onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
                 <Route path="login" element={<PublicRoute><UserLogin /></PublicRoute>} />
                 
