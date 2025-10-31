@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Coins, ArrowLeftRight, Wallet, Shield } from 'lucide-react';
+import { Coins, Shield } from 'lucide-react';
 import WalletConnect from './WalletConnect';
 
 const Layout = () => {
@@ -20,85 +20,6 @@ const Layout = () => {
             </Link>
             
             <div className="flex items-center space-x-4">
-              <Link
-                to="/home"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/home'
-                    ? 'bg-slate-100 text-slate-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <span>Home</span>
-              </Link>
-              
-              <Link
-                to="/send"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/send'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <ArrowLeftRight className="w-4 h-4" />
-                <span>Send</span>
-              </Link>
-              
-              <Link
-                to="/receive"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/receive'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Wallet className="w-4 h-4" />
-                <span>Receive</span>
-              </Link>
-
-              <Link
-                to="/buy"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/buy'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Buy
-              </Link>
-
-              <Link
-                to="/history"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/history'
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                History
-              </Link>
-
-              <Link
-                to="/profile"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/profile'
-                    ? 'bg-cyan-100 text-cyan-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Profile
-              </Link>
-
-              <Link
-                to="/kyc"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  location.pathname === '/kyc'
-                    ? 'bg-fuchsia-100 text-fuchsia-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                KYC
-              </Link>
-
               <div className="relative group">
                 <Link
                   to="/admin"

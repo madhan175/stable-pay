@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
+import Home from './pages/Home';
 import Send from './pages/Send';
 import Receive from './pages/Receive';
 import Admin from './pages/Admin';
@@ -20,18 +21,20 @@ import AdminSettings from './pages/AdminSettings';
 import AdminSecurity from './pages/AdminSecurity';
 import KYC from './pages/KYC';
 import Onboarding from './pages/Onboarding';
+import { AuthProvider } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
 import { KYCProvider } from './context/KYCContext';
 
 function App() {
   return (
-    <WalletProvider>
-      <KYCProvider>
-        <Router>
+    <AuthProvider>
+      <WalletProvider>
+        <KYCProvider>
+          <Router>
           <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
             <Routes>
               <Route path="/" element={<Layout />}>
-                <Route index element={<Landing />} />
+                <Route index element={<Onboarding />} />
                 <Route path="send" element={<Send />} />
                 <Route path="login" element={<UserLogin />} />
                 <Route path="home" element={<UserDashboard />} />
@@ -55,9 +58,10 @@ function App() {
               </Route>
             </Routes>
           </div>
-        </Router>
-      </KYCProvider>
-    </WalletProvider>
+          </Router>
+        </KYCProvider>
+      </WalletProvider>
+    </AuthProvider>
   );
 }
 

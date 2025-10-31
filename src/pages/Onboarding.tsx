@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
-import { CheckCircle, Shield, User, Users, Wallet, CreditCard, Fingerprint, ArrowRight } from 'lucide-react';
+import { CheckCircle, Shield, User, Users, Wallet, CreditCard, Fingerprint, ArrowRight, Camera } from 'lucide-react';
 import PhoneVerification from '../components/PhoneVerification';
 import KYCUpload from '../components/KYCUpload';
+import Intro from './Intro';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-type StepKey = 2 | 3 | 4 | 5 | 6;
+type StepKey = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 const steps: { key: StepKey; label: string; icon: React.ElementType }[] = [
+  { key: 1, label: 'Intro', icon: User },
   { key: 2, label: 'Phone verification', icon: Shield },
   { key: 3, label: 'Teen + Guardian KYC', icon: Users },
-  { key: 4, label: 'Account setup', icon: Wallet },
-  { key: 5, label: 'Link & fund', icon: CreditCard },
-  { key: 6, label: 'Secure settings', icon: Fingerprint },
+  { key: 4, label: 'Face verification', icon: Camera },
+  { key: 5, label: 'Biometric / PIN', icon: Fingerprint },
+  { key: 6, label: 'Scanner setup', icon: QrCodeIcon },
+  { key: 7, label: 'Summary', icon: Wallet },
 ];
+
+function QrCodeIcon(props: any) {
+  return <svg {...props} viewBox="0 0 24 24" className={props.className}><path fill="currentColor" d="M3 3h8v8H3V3zm2 2v4h4V5H5zm6 0h2v2h-2V5zm0 4h2v2h-2V9zM3 13h2v2H3v-2zm4 0h4v4H7v-4zm-4 6h8v2H3v-2zm10-6h2v2h-2v-2zm0 4h2v4h-2v-4zm4-4h4v2h-4v-2zm0 4h2v2h-2v-2zm2 2h2v2h-2v-2z"/></svg>;
+}
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [current, setCurrent] = useState<StepKey>(2);
+  const [current, setCurrent] = useState<StepKey>(1);
 
   // Minimal local state for guardians/teen form
   const [teen, setTeen] = useState({ fullName: '', dob: '', school: '' });
@@ -69,6 +76,16 @@ const Onboarding: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+          {current === 1 && (
+            <div className="max-w-lg mx-auto text-center space-y-4">
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 rounded-2xl h-48 flex items-center justify-center text-white">
+                <div className="text-xl font-semibold">Welcome to StablePay</div>
+              </div>
+              <div className="text-gray-600">We’ll set up your account in a few quick steps.</div>
+              <button onClick={next} className="px-4 py-2 rounded-lg bg-blue-600 text-white">Start</button>
+            </div>
+          )}
+
           {current === 2 && (
             <div className="max-w-md mx-auto">
               <PhoneVerification onVerified={handlePhoneVerified} />
@@ -102,57 +119,51 @@ const Onboarding: React.FC = () => {
 
           {current === 4 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Create a spending account. You can add an optional numberless virtual card now and order a physical one later.</div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <button className="rounded-xl border-2 border-gray-200 p-4 text-left hover:border-blue-300">
-                  <div className="font-semibold">Wallet only</div>
-                  <div className="text-sm text-gray-600">Create crypto wallet</div>
-                </button>
-                <button className="rounded-xl border-2 border-gray-200 p-4 text-left hover:border-blue-300">
-                  <div className="font-semibold">Wallet + virtual card</div>
-                  <div className="text-sm text-gray-600">Instant numberless card</div>
-                </button>
+              <div className="text-gray-800">Real-time face verification</div>
+              <div className="rounded-2xl border-2 border-dashed border-gray-300 h-56 flex items-center justify-center text-gray-500">
+                Camera preview placeholder
               </div>
-              <div className="text-xs text-gray-500">Cards are issued via partner bank; additional KYC may apply.</div>
+              <div className="text-xs text-gray-500">We will perform liveness checks. For demo, press Next.</div>
             </div>
           )}
 
           {current === 5 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Link funding source and set controls.</div>
-              <input className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl" placeholder="Add amount to load (INR)" />
-              <div className="grid md:grid-cols-2 gap-4">
-                <button className="rounded-xl border-2 border-gray-200 p-4 text-left hover:border-blue-300">Add via UPI</button>
-                <button className="rounded-xl border-2 border-gray-200 p-4 text-left hover:border-blue-300">Add via Card</button>
+              <div className="text-gray-800">Enable device security</div>
+              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
+                <div className="text-sm">Biometric / Face ID</div>
+                <input type="checkbox" className="h-4 w-4" defaultChecked />
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm">
-                <div className="font-medium text-blue-800 mb-1">Parental controls</div>
-                <div className="text-blue-700">Set spending limits and merchant categories after onboarding.</div>
+              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
+                <div className="text-sm">Backup PIN</div>
+                <input type="checkbox" className="h-4 w-4" defaultChecked />
               </div>
             </div>
           )}
 
           {current === 6 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">Enable secure settings.</div>
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
-                <div className="text-sm">Two-factor authentication</div>
-                <input type="checkbox" className="h-4 w-4" defaultChecked />
+              <div className="text-gray-800">Scanner setup</div>
+              <div className="rounded-2xl border-2 border-dashed border-gray-300 h-56 flex items-center justify-center text-gray-500">
+                Individual QR/Barcode scanner placeholder
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
-                <div className="text-sm">Biometric / PIN login</div>
-                <input type="checkbox" className="h-4 w-4" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-gray-200">
-                <div className="text-sm">Parental approvals enabled</div>
-                <input type="checkbox" className="h-4 w-4" defaultChecked />
+              <div className="text-xs text-gray-500">Grant camera permissions when prompted. For demo, press Next.</div>
+            </div>
+          )}
+
+          {current === 7 && (
+            <div className="max-w-lg mx-auto space-y-4">
+              <div className="text-gray-800">All set!</div>
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm">
+                <div className="font-medium text-green-800 mb-1">You’ve completed onboarding.</div>
+                <div className="text-green-700">You can now proceed to payments and dashboard.</div>
               </div>
             </div>
           )}
 
           <div className="mt-6 flex items-center justify-between">
-            <button onClick={prev} disabled={current === 2} className="px-4 py-2 rounded-lg border-2 border-gray-200 disabled:opacity-50">Back</button>
-            {current < 6 ? (
+            <button onClick={prev} disabled={current === 1} className="px-4 py-2 rounded-lg border-2 border-gray-200 disabled:opacity-50">Back</button>
+            {current < 7 ? (
               <button onClick={next} className="px-4 py-2 rounded-lg bg-blue-600 text-white flex items-center space-x-2">
                 <span>Next</span>
                 <ArrowRight className="w-4 h-4" />
