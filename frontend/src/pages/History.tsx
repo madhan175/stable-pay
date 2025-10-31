@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, Coins, Download, ExternalLink, RefreshCw, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Coins, Download, ExternalLink, RefreshCw, Wallet, FileText } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAuth } from '../context/AuthContext';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
@@ -18,6 +18,7 @@ interface Transaction {
   status: 'confirmed' | 'pending' | 'failed';
   from?: string;
   to?: string;
+  isSupabaseTx?: boolean;
 }
 
 const History = () => {
@@ -70,7 +71,8 @@ const History = () => {
                     txHash: tx.tx_hash || '',
                     status: tx.status === 'completed' ? 'confirmed' : 'pending',
                     from: isSent ? account : undefined,
-                    to: tx.recipient_wallet
+                    to: tx.recipient_wallet,
+                    isSupabaseTx: true
                   };
                 });
             }
@@ -171,6 +173,15 @@ const History = () => {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
+  };
+
+  const handleReceiptDownload = async (transactionId: string) => {
+    try {
+      await transactionAPI.downloadReceipt(transactionId);
+    } catch (error) {
+      console.error('Failed to download receipt:', error);
+      alert('Failed to download receipt. Please try again.');
+    }
   };
 
   const handleDownload = () => {
@@ -320,17 +331,28 @@ const History = () => {
                       <div className={`text-xs sm:text-sm ${tx.type === 'sent' ? 'text-red-500' : 'text-green-500'}`}>
                         {tx.currency}
                       </div>
-                      {tx.txHash && (
-                        <a
-                          href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-700 active:text-blue-800 flex items-center space-x-1 mt-1.5 sm:mt-1 justify-end touch-manipulation"
-                        >
-                          <span>View</span>
-                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                        </a>
-                      )}
+                      <div className="flex flex-col items-end gap-1 mt-1.5 sm:mt-1">
+                        {tx.txHash && (
+                          <a
+                            href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:text-blue-700 active:text-blue-800 flex items-center space-x-1 touch-manipulation"
+                          >
+                            <span>View</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                        )}
+                        {tx.isSupabaseTx && tx.status === 'confirmed' && (
+                          <button
+                            onClick={() => handleReceiptDownload(tx.id)}
+                            className="text-xs text-purple-600 hover:text-purple-700 active:text-purple-800 flex items-center space-x-1 touch-manipulation"
+                          >
+                            <FileText className="w-3 h-3 flex-shrink-0" />
+                            <span>Receipt</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
