@@ -519,6 +519,15 @@ const Landing = () => {
           setShowPhoneModal(false);
         }}
       />
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/onboarding"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Start Onboarding
+        </Link>
+      </div>
     </div>
   );
 };

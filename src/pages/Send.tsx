@@ -10,8 +10,10 @@ import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
 import { paymentsAPI } from '../services/api';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Send = () => {
+  const navigate = useNavigate();
   const { account, isConnected } = useWallet();
   const { user, createTransaction, isLoading: kycLoading } = useKYC();
   const [inrAmount, setInrAmount] = useState('');
@@ -546,6 +548,14 @@ const Send = () => {
                 <p className="text-xs text-green-700 break-all">
                   TX: {txHash}
                 </p>
+                <div className="mt-3">
+                  <Link
+                    to="/receive"
+                    className="inline-block px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition"
+                  >
+                    View Dashboard
+                  </Link>
+                </div>
               </div>
             )}
             

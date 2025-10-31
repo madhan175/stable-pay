@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowDownLeft, ArrowUpRight, Coins, Download } from 'lucide-react';
 
 type Tab = 'all' | 'sent' | 'received' | 'purchased';
@@ -58,6 +59,15 @@ const History = () => {
           <Download className="w-4 h-4" />
           <span>Download Report (PDF)</span>
         </button>
+      </div>
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/profile"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Next: Profile
+        </Link>
       </div>
     </div>
   );

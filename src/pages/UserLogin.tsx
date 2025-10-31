@@ -1,5 +1,6 @@
 import { Wallet, Smartphone, ArrowRight } from 'lucide-react';
 import WalletConnect from '../components/WalletConnect';
+import { Link } from 'react-router-dom';
 
 const UserLogin = () => {
   return (
@@ -33,6 +34,16 @@ const UserLogin = () => {
         <div className="text-center text-sm">
           <button className="text-blue-600 hover:text-blue-700">Proceed as Guest (View-Only)</button>
         </div>
+      </div>
+
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/kyc"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Next: KYC
+        </Link>
       </div>
     </div>
   );

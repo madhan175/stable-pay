@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wallet, RefreshCw, ExternalLink, Copy, Check, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
@@ -506,6 +507,15 @@ const Receive = () => {
           </div>
         </div>
       )}
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/history"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Next: History
+        </Link>
+      </div>
     </div>
   );
 };

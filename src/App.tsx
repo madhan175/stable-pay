@@ -18,6 +18,8 @@ import AdminMerchants from './pages/AdminMerchants';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
 import AdminSecurity from './pages/AdminSecurity';
+import KYC from './pages/KYC';
+import Onboarding from './pages/Onboarding';
 import { WalletProvider } from './context/WalletContext';
 import { KYCProvider } from './context/KYCContext';
 
@@ -37,6 +39,8 @@ function App() {
                 <Route path="history" element={<History />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="receive" element={<Receive />} />
+                <Route path="kyc" element={<KYC />} />
+                <Route path="onboarding" element={<Onboarding />} />
               <Route path="admin" element={<Admin />} />
               <Route path="intro" element={<Intro />} />
                 {/* Admin routes */}

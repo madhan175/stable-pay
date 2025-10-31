@@ -1,4 +1,5 @@
 import { Lock, Wallet, CreditCard, Moon, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Profile = () => {
   return (
@@ -50,6 +51,15 @@ const Profile = () => {
       <div className="flex items-center space-x-3">
         <button className="px-4 py-2 rounded-lg border border-gray-200">Disconnect Wallet</button>
         <button className="px-4 py-2 rounded-lg border border-gray-200">Logout</button>
+      </div>
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/home"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Next: Home
+        </Link>
       </div>
     </div>
   );
