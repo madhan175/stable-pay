@@ -1040,9 +1040,38 @@ app.use((error, req, res, next) => {
 // Cleanup expired OTPs hourly
 setInterval(() => otpService.cleanupExpiredOTPs(), 60 * 60 * 1000);
 
+// Error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  process.exit(1);
+});
+
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+
+// Log environment status (without exposing secrets)
+console.log('📦 Starting server...');
+console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
+console.log('🌐 Port:', PORT);
+console.log('🔑 Supabase URL:', process.env.SUPABASE_URL ? '✅ SET' : '❌ NOT SET');
+console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? '✅ SET' : '❌ NOT SET');
+console.log('🌍 Allowed Origins:', process.env.ALLOWED_ORIGINS || 'Using defaults');
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 KYC system ready for OTP + OCR + Transactions`);
+  console.log(`🔗 Health check: http://0.0.0.0:${PORT}/health`);
+}).on('error', (error) => {
+  console.error('❌ Server failed to start:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`⚠️ Port ${PORT} is already in use`);
+  }
+  process.exit(1);
 });
