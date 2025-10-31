@@ -8,7 +8,7 @@ const Buy = () => {
   const [done, setDone] = useState(false);
 
   return (
-    <div className="max-w-xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
+    <div className="max-w-xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 overflow-x-hidden w-full max-w-full">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Buy Stablecoins Instantly</h1>
 
       <div className="bg-white rounded-2xl shadow p-4 sm:p-6 border border-gray-100 space-y-3 sm:space-y-4">

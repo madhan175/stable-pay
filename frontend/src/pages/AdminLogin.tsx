@@ -2,7 +2,7 @@ import { Wallet, Shield, Mail } from 'lucide-react';
 
 const AdminLogin = () => {
   return (
-    <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-6">
+    <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-6 overflow-x-hidden w-full max-w-full">
       <div className="text-center">
         <Shield className="w-10 h-10 text-purple-600 mx-auto" />
         <h1 className="text-2xl font-bold mt-2">Admin Panel</h1>

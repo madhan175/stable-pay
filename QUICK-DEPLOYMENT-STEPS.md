@@ -103,6 +103,9 @@ Should return: `{"status":"OK","timestamp":"..."}`
    - **Root Directory**: `frontend`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+
+**Note**: The `vercel.json` file in your repo automatically configures headers for PWA support.
 
 ### 3.2 Add Environment Variables
 
@@ -172,6 +175,8 @@ ALLOWED_ORIGINS=https://your-project.vercel.app
 - [ ] No CORS errors in console
 - [ ] Backend health check returns OK
 - [ ] Database operations work
+- [ ] PWA features work (service worker, install prompt)
+- [ ] Mobile-responsive design works correctly
 
 ### 5.2 Common Issues
 

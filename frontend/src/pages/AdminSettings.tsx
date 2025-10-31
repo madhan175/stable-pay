@@ -1,6 +1,6 @@
 const AdminSettings = () => {
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6 overflow-x-hidden w-full max-w-full">
       <h1 className="text-3xl font-bold text-gray-900">Admin Settings</h1>
       <div className="bg-white rounded-2xl shadow p-6 border border-gray-100 space-y-4">
         <div>

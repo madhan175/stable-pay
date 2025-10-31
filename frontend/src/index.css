@@ -32,3 +32,29 @@
 .touch-manipulation {
   touch-action: manipulation;
 }
+
+/* Prevent horizontal overflow globally */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+#root {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+/* Ensure all containers respect viewport width */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent elements from causing horizontal scroll */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}

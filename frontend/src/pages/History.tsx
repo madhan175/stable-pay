@@ -220,7 +220,7 @@ const History = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-12">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-12 overflow-x-hidden w-full max-w-full">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Transaction History</h1>
         {isConnected && (
@@ -249,7 +249,7 @@ const History = () => {
         </div>
       ) : (
         <>
-          <div className="flex items-center space-x-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 sm:-mx-0 px-3 sm:px-0 scrollbar-hide">
+          <div className="flex items-center space-x-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide w-full max-w-full">
             {tabs.map(t => (
               <button
                 key={t.key}

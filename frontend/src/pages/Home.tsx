@@ -22,6 +22,7 @@ const Home = () => {
   const { user } = useAuth();
   const { account, isConnected } = useWallet();
   const { canInstall, isIOS, isStandalone, installApp, deferredPrompt } = usePWAInstall();
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
   const [balance, setBalance] = useState('0.000000');
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,19 +78,17 @@ const Home = () => {
       setShowIOSInstructions(!showIOSInstructions);
     } else {
       // For desktop/mobile browsers, try to install
-      try {
-        await installApp();
-        // Note: Button stays visible even after click - allows users to try again if needed
-      } catch (error) {
-        console.error('Install error:', error);
-        // Error handling is done in installApp function
+      const success = await installApp();
+      if (!success) {
+        // If install failed, show instructions in a better UI
+        setShowInstallInstructions(true);
       }
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white overflow-x-hidden w-full max-w-full">
+      <div className="max-w-xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 sm:pb-24 w-full">
         {/* Download/Install App Button - Always visible (never removed) */}
         <div className="mb-4">
           {!isStandalone ? (
@@ -120,6 +119,35 @@ const Home = () => {
                 <li>Scroll down and select <strong>"Add to Home Screen"</strong></li>
                 <li>Tap <strong>"Add"</strong> in the top right corner</li>
               </ol>
+            </div>
+          )}
+          {showInstallInstructions && !isIOS && (
+            <div className="mt-3 bg-blue-50 border-2 border-blue-200 rounded-2xl shadow-sm p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="text-sm font-semibold text-blue-900">How to Install StablePay</div>
+                <button
+                  onClick={() => setShowInstallInstructions(false)}
+                  className="text-blue-600 hover:text-blue-800 text-lg font-bold"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="text-xs sm:text-sm text-blue-800 space-y-2">
+                <p className="font-medium mb-2">For Chrome/Edge:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Look for the <strong>Install icon (⊕)</strong> in the address bar (right side)</li>
+                  <li>Click it and select <strong>"Install"</strong></li>
+                </ol>
+                <p className="mt-3 font-medium">OR</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Click the <strong>menu (⋮)</strong> in the top right</li>
+                  <li>Look for <strong>"Install StablePay"</strong> or <strong>"Install app"</strong> option</li>
+                </ol>
+                <p className="mt-3 text-xs text-blue-600">
+                  💡 If you don't see the install option, make sure you're on HTTPS and the page has loaded completely.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -223,7 +251,7 @@ const Home = () => {
         {/* People */}
         <div className="mt-6 sm:mt-8">
           <div className="text-base sm:text-lg font-bold text-gray-900 mb-3">Recent Contacts</div>
-          <div className="flex items-center space-x-4 sm:space-x-6 overflow-x-auto pb-2 -mx-3 sm:-mx-0 px-3 sm:px-0 scrollbar-hide">
+          <div className="flex items-center space-x-4 sm:space-x-6 overflow-x-auto pb-2 scrollbar-hide w-full max-w-full">
             {people.map((p) => (
               <Link 
                 key={p.name} 

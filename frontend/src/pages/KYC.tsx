@@ -30,8 +30,8 @@ const KYC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8 sm:py-16">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8 sm:py-16 overflow-x-hidden w-full max-w-full">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 w-full">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -46,7 +46,7 @@ const KYC = () => {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex justify-center mb-8 sm:mb-12 overflow-x-auto pb-2 scrollbar-hide -mx-3 sm:-mx-0 px-3 sm:px-0">
+        <div className="flex justify-center mb-8 sm:mb-12 overflow-x-auto pb-2 scrollbar-hide w-full max-w-full">
           <div className="flex items-center space-x-4 sm:space-x-8">
             {steps.map((step, index) => {
               const isActive = 

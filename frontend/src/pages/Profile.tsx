@@ -24,7 +24,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 space-y-4 sm:space-y-6">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 space-y-4 sm:space-y-6 overflow-x-hidden w-full max-w-full">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile & Settings</h1>
 
       {/* User Info */}

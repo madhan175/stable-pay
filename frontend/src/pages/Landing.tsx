@@ -31,7 +31,7 @@ const Landing = () => {
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative overflow-x-hidden w-full max-w-full">
       {showIntro && (
         <Intro autoDismiss durationMs={2400} onComplete={() => setShowIntro(false)} />
       )}

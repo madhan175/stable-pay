@@ -38,8 +38,20 @@ Your backend URL will look like: `https://stablepay-backend.onrender.com`
 - **Build Command**: `npm run build`
 - **Output Directory**: `dist`
 - **Install Command**: `npm install`
+- **Node.js Version**: `18.x` or higher (auto-detected from `package.json`)
 
 **Vercel will auto-detect Vite**, but verify these settings are correct.
+
+#### Advanced Build Settings
+
+You can also configure additional settings in Vercel dashboard:
+
+- **Ignore Build Step**: Leave empty (build on every push)
+- **Install Command**: `npm install` (default)
+- **Environment**: Production, Preview, Development
+- **Command Override**: Leave empty (use `package.json` scripts)
+
+**Note**: The `vercel.json` file in your repository will override dashboard settings, so you don't need to configure headers manually.
 
 ### Step 4: Set Environment Variables
 
@@ -66,8 +78,23 @@ VITE_USDT_ADDRESS=0x...
 #### Important Notes
 
 - Replace `https://your-backend.onrender.com` with your actual Render backend URL
-- Get Supabase keys from your Supabase project settings
+- Get Supabase keys from your Supabase project settings (Project Settings → API)
 - Contract addresses are optional but recommended for full functionality
+- All variables MUST start with `VITE_` to be exposed to the frontend
+- Set environment-specific values (Production, Preview, Development)
+
+#### Optional Variables
+
+```env
+# Node Environment
+NODE_ENV=production
+
+# Blockchain Network (default: sepolia testnet)
+VITE_NETWORK=sepolia
+
+# Feature Flags
+VITE_ENABLE_MOCK_MODE=false
+```
 
 ### Step 5: Deploy
 
@@ -127,6 +154,38 @@ VITE_API_URL=https://stablepay-backend.onrender.com
 VITE_API_URL=https://stablepay-backend-staging.onrender.com
 ```
 
+## PWA Configuration
+
+This project includes Progressive Web App (PWA) functionality. The `vercel.json` file is already configured with:
+
+- ✅ Service worker caching headers (`Service-Worker-Allowed`)
+- ✅ Workbox asset caching (regex pattern: `/workbox-(.*)\\.js`)
+- ✅ Manifest file headers (proper MIME type)
+- ✅ React Router rewrites for SPA navigation
+- ✅ Static asset optimization (JS, CSS, images, fonts)
+- ✅ Vite build output optimization
+
+### PWA Features on Vercel
+
+- **Offline Support**: Service worker caches assets and API responses
+- **Install Prompt**: Users can install the app on their devices
+- **Fast Loading**: Optimized caching with proper cache-control headers
+- **Mobile Optimized**: Standalone display mode for native app feel
+- **Production Ready**: Automatic asset optimization and CDN delivery
+
+### Adding PWA Icons
+
+Before deploying, ensure you have PWA icons in the `frontend/public` folder:
+
+1. Generate icons using `public/icon-generator.html`
+2. Or use online tools like [PWA Builder](https://www.pwabuilder.com/imageGenerator)
+3. Required files:
+   - `pwa-192x192.png`
+   - `pwa-512x512.png`
+   - `apple-touch-icon.png` (180x180 for iOS)
+
+See `PWA-SETUP.md` for detailed icon generation instructions.
+
 ## Troubleshooting
 
 ### Build Fails
@@ -172,6 +231,12 @@ VITE_API_URL=https://stablepay-backend-staging.onrender.com
 2. Review console for service worker errors
 3. Clear browser cache
 
+**Issue**: Service worker cache issues
+1. Check `vercel.json` headers configuration
+2. Verify service worker is served with correct headers
+3. Clear application data and hard refresh
+4. Use Chrome DevTools → Application → Clear Storage
+
 ## Testing Production
 
 After deployment, test:
@@ -200,19 +265,51 @@ View deployment logs:
 
 ## Performance Optimization
 
-### Vercel Optimizations
+### Vercel Automatic Optimizations
 
-- Automatic image optimization
-- Edge network (CDN)
-- Automatic HTTPS
-- Code splitting
+- ✅ **Automatic Image Optimization**: WebP conversion, lazy loading
+- ✅ **Edge Network (CDN)**: Global content delivery
+- ✅ **Automatic HTTPS**: SSL/TLS certificates
+- ✅ **Code Splitting**: Automatic route-based splitting
+- ✅ **Asset Compression**: Gzip/Brotli compression
+- ✅ **Static Asset Caching**: Immutable cache headers
 
-### Recommendations
+### Configured Optimizations
 
-1. Enable preview deployments for testing
-2. Use environment-specific configurations
-3. Monitor bundle size
-4. Use Vercel Analytics for performance insights
+Your `vercel.json` includes:
+
+- **Service Worker**: Offline support with smart caching
+- **Workbox**: Long-term cache for static assets
+- **Asset Caching**: 1-year cache for JS, CSS, images, fonts
+- **Manifest Caching**: 1-hour cache for PWA manifest
+- **SPA Routing**: React Router rewrites for client-side navigation
+
+### Performance Best Practices
+
+1. **Bundle Analysis**
+   ```bash
+   npm run build -- --analyze
+   ```
+
+2. **Monitor Bundle Size**
+   - Keep main bundle < 250KB gzipped
+   - Lazy load non-critical components
+   - Use dynamic imports for heavy libraries
+
+3. **Enable Vercel Analytics**
+   - Real User Monitoring (RUM)
+   - Web Vitals tracking (LCP, FID, CLS)
+   - Custom event tracking
+
+4. **Image Optimization**
+   - Use WebP format when possible
+   - Implement lazy loading
+   - Use appropriate image sizes
+
+5. **Code Splitting**
+   - Route-based splitting (already configured)
+   - Component-based splitting for heavy components
+   - Dynamic imports for ethers.js and other large libs
 
 ## Cost
 

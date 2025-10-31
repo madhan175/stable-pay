@@ -104,12 +104,23 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
       }
 
       // Create credential options
+      // Get the correct RP ID - use parent domain for subdomains, hostname for root domains
+      const getRPId = () => {
+        const hostname = window.location.hostname;
+        // For localhost, use localhost
+        if (hostname === 'localhost' || hostname.startsWith('127.0.0.1')) {
+          return 'localhost';
+        }
+        // For production domains, use the hostname
+        return hostname;
+      };
+
       const credentialOptions: PublicKeyCredentialCreationOptions = {
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rp: {
             name: 'StablePay',
-            id: window.location.hostname,
+            id: getRPId(),
           },
           user: {
             id: crypto.getRandomValues(new Uint8Array(32)),
@@ -121,11 +132,14 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
             { alg: -257, type: 'public-key' }, // RS256
           ],
           authenticatorSelection: {
-            authenticatorAttachment: 'platform', // Built-in authenticators only
+            authenticatorAttachment: 'platform', // Force platform (built-in) authenticators only
             userVerification: 'required',
+            residentKey: 'discouraged', // Don't create resident keys (passkeys) - use device authenticator only
           },
           timeout: 60000,
           attestation: 'none',
+          // Explicitly exclude cross-platform authenticators
+          excludeCredentials: [], // No exclusions needed, authenticatorAttachment handles it
         },
       };
 
@@ -187,17 +201,46 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
       // Get stored credential
       const credentialData = JSON.parse(existing);
 
-      // Create get options
+      // Get the correct RP ID - use parent domain for subdomains, hostname for root domains
+      const getRPId = () => {
+        const hostname = window.location.hostname;
+        // For localhost, use localhost
+        if (hostname === 'localhost' || hostname.startsWith('127.0.0.1')) {
+          return 'localhost';
+        }
+        // For production domains, use the hostname
+        return hostname;
+      };
+
+      // Decode the credential ID properly (WebAuthn uses base64url encoding)
+      let credentialId: Uint8Array;
+      try {
+        // Convert base64url to base64 for atob
+        let base64Id = credentialData.id.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        while (base64Id.length % 4) {
+          base64Id += '=';
+        }
+        // Decode base64 to Uint8Array
+        const binaryString = atob(base64Id);
+        credentialId = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+      } catch (e) {
+        console.error('Error decoding credential ID:', e);
+        throw new Error('Invalid credential ID format');
+      }
+
+      // Create get options - explicitly request platform authenticators only
       const getOptions: PublicKeyCredentialRequestOptions = {
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rpId: getRPId(), // Explicitly set RP ID
           allowCredentials: [{
-            id: Uint8Array.from(atob(credentialData.id), c => c.charCodeAt(0)),
+            id: credentialId,
             type: 'public-key',
-            transports: ['internal'],
+            transports: ['internal'], // Only allow internal (platform) transports
           }],
           timeout: 60000,
-          userVerification: 'required',
+          userVerification: 'required', // Require user verification (biometric/PIN)
         },
       };
 
@@ -335,9 +378,10 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
 
       {/* Info */}
       <div className="text-xs text-gray-500 space-y-1">
-        <p>• Uses your device's built-in biometric authenticator</p>
+        <p>• Uses your device's built-in biometric authenticator (face, fingerprint, or device PIN)</p>
         <p>• Supports fingerprint, face ID, or other platform authenticators</p>
         <p>• Your biometric data never leaves your device</p>
+        <p>• Note: If you previously set up a passkey, you may need to re-register for device biometrics</p>
       </div>
     </div>
   );

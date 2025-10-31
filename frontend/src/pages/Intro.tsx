@@ -265,7 +265,7 @@ const Intro = ({ autoDismiss = true, durationMs = 2400, onComplete }: IntroProps
         transition={{ duration: durationMs / 1000, ease: 'easeOut' }}
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
       >
-        <div className="h-[860px] w-[860px] rounded-full bg-cyan-500/20 blur-[220px]" />
+        <div className="h-[860px] w-[860px] max-w-full rounded-full bg-cyan-500/20 blur-[220px] overflow-hidden" />
       </motion.div>
 
       {/* Title */}
