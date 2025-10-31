@@ -14,7 +14,8 @@ interface UsePWAInstallReturn {
   isIOS: boolean;
   isStandalone: boolean;
   canInstall: boolean;
-  installApp: () => Promise<void>;
+  installApp: () => Promise<boolean>;
+  showManualInstructions: () => void;
 }
 
 export const usePWAInstall = (): UsePWAInstallReturn => {
@@ -49,12 +50,20 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
 
     // Handle beforeinstallprompt event (Android/Chrome/Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('beforeinstallprompt event fired');
+      console.log('✅ beforeinstallprompt event fired!', e);
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      console.log('Prompt event details:', {
+        platforms: promptEvent.platforms,
+        eventType: e.type
+      });
+      setDeferredPrompt(promptEvent);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Note: beforeinstallprompt may fire later or not at all
+    // This is normal if app already installed or PWA criteria not met
 
     // Check again after a short delay to ensure all checks are done
     const timeoutId = setTimeout(checkStandalone, 500);
@@ -67,6 +76,7 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       clearTimeout(timeoutId);
+      clearTimeout(debugTimeout);
       clearInterval(intervalId);
     };
   }, []);
@@ -88,10 +98,16 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     alert(instructions);
   };
 
-  const installApp = async () => {
+  const installApp = async (): Promise<boolean> => {
     try {
+      // Wait a moment in case the event fires right after user interaction
+      if (!deferredPrompt) {
+        console.log('Waiting for install prompt...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       if (deferredPrompt) {
-        console.log('Triggering install prompt...');
+        console.log('Triggering install prompt...', deferredPrompt);
         try {
           // Show the install prompt
           await deferredPrompt.prompt();
@@ -101,26 +117,29 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
           
           if (outcome === 'accepted') {
             console.log('User accepted the install prompt');
-            // Don't clear the prompt immediately - browser will handle it
-            // The prompt will be cleared automatically after installation
+            // Clear the prompt after successful installation
+            setDeferredPrompt(null);
+            return true;
           } else {
             console.log('User dismissed the install prompt');
+            return false;
           }
-          
-          // Note: We keep deferredPrompt available so button can be clicked again
-          // The browser will automatically clear it after successful installation
         } catch (promptError) {
           console.error('Error showing install prompt:', promptError);
-          // If prompt fails, show manual instructions
-          showManualInstallInstructions();
+          // If prompt fails, return false so UI can handle it
+          return false;
         }
       } else {
-        console.warn('No deferred prompt available yet. Showing manual instructions.');
-        showManualInstallInstructions();
+        console.warn('No deferred prompt available. PWA may already be installed or browser doesn\'t support it.');
+        console.log('PWA Installation Requirements Check:');
+        console.log('- HTTPS: ', window.location.protocol === 'https:' || window.location.hostname === 'localhost');
+        console.log('- Service Worker: ', 'serviceWorker' in navigator);
+        console.log('- Manifest: Check DevTools > Application > Manifest');
+        return false;
       }
     } catch (error) {
       console.error('Error installing app:', error);
-      showManualInstallInstructions();
+      return false;
     }
   };
 
@@ -137,6 +156,7 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     isStandalone,
     canInstall,
     installApp,
+    showManualInstructions: showManualInstallInstructions,
   };
 };
 
