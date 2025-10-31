@@ -139,6 +139,56 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
         }
       }
 
+      // Check manifest validity
+      let manifestValid = false;
+      let manifestError = '';
+      try {
+        const manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
+        if (manifestLink && manifestLink.href) {
+          try {
+            const response = await fetch(manifestLink.href);
+            if (response.ok) {
+              const manifest = await response.json();
+              console.log('✅ Manifest loaded:', manifest);
+              
+              // Check required fields
+              if (!manifest.icons || manifest.icons.length === 0) {
+                manifestError = 'Manifest has no icons';
+              } else {
+                // Check if icons exist
+                const iconPromises = manifest.icons.map(async (icon: any) => {
+                  try {
+                    const iconResponse = await fetch(icon.src);
+                    return iconResponse.ok;
+                  } catch {
+                    return false;
+                  }
+                });
+                const iconsExist = await Promise.all(iconPromises);
+                if (!iconsExist.some(exists => exists)) {
+                  manifestError = 'PWA icons are missing! Add pwa-192x192.png and pwa-512x512.png to public folder';
+                  console.error('❌ PWA Icons Missing!', manifest.icons);
+                } else {
+                  manifestValid = true;
+                }
+              }
+            } else {
+              manifestError = `Manifest fetch failed: ${response.status}`;
+            }
+          } catch (fetchError) {
+            manifestError = `Error fetching manifest: ${fetchError}`;
+          }
+        } else {
+          manifestError = 'Manifest link not found in HTML';
+        }
+      } catch (e) {
+        manifestError = `Error checking manifest: ${e}`;
+      }
+
+      if (manifestError) {
+        console.error('❌ Manifest Issue:', manifestError);
+      }
+
       // Wait for the prompt - Chrome may delay it until user gesture
       if (!deferredPromptRef.current && !deferredPrompt) {
         console.log('Waiting for install prompt (may take a moment)...');
@@ -185,13 +235,23 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
         console.log('   - HTTPS/Localhost:', window.location.protocol === 'https:' || window.location.hostname === 'localhost');
         console.log('   - Service Worker registered:', swRegistered);
         console.log('   - Service Worker supported:', 'serviceWorker' in navigator);
-        console.log('   - Manifest: Check DevTools > Application > Manifest');
+        console.log('   - Manifest valid:', manifestValid, manifestError ? `(${manifestError})` : '');
         console.log('   - Current URL:', window.location.href);
         console.log('');
-        console.log('💡 IMPORTANT: If beforeinstallprompt didn\'t fire, you can still install:');
-        console.log('   1. Look for the install icon (⊕) in Chrome\'s address bar');
-        console.log('   2. Or go to Chrome menu (⋮) > "Install StablePay"');
-        console.log('   3. The app is installable even if the event didn\'t fire!');
+        
+        if (manifestError && manifestError.includes('icons')) {
+          console.error('❌ CRITICAL: PWA icons are missing!');
+          console.error('   This is why Chrome won\'t show the install prompt.');
+          console.error('   SOLUTION: Add these files to frontend/public/:');
+          console.error('   - pwa-192x192.png (192x192 pixels)');
+          console.error('   - pwa-512x512.png (512x512 pixels)');
+          console.error('   You can use: frontend/public/icon-generator.html to create them');
+        } else {
+          console.log('💡 IMPORTANT: If beforeinstallprompt didn\'t fire, you can still install:');
+          console.log('   1. Look for the install icon (⊕) in Chrome\'s address bar');
+          console.log('   2. Or go to Chrome menu (⋮) > "Install StablePay"');
+          console.log('   3. The app is installable even if the event didn\'t fire!');
+        }
         
         return false;
       }

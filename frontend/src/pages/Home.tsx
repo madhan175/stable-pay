@@ -80,7 +80,8 @@ const Home = () => {
       // For desktop/mobile browsers, try to install
       const success = await installApp();
       if (!success) {
-        // If install failed, show instructions in a better UI
+        // Always show instructions - helps user understand how to install
+        // Even if prompt works, showing instructions is helpful
         setShowInstallInstructions(true);
       }
     }
@@ -159,8 +160,9 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-2 text-xs text-yellow-800">
-                  <p className="font-semibold">💡 Why doesn't the button work?</p>
-                  <p className="mt-1">Chrome may not show the install prompt if you previously dismissed it. But the app is still installable! Just use the install icon in your address bar.</p>
+                  <p className="font-semibold">💡 Why doesn't the button trigger installation?</p>
+                  <p className="mt-1">Chrome's install prompt only appears if the PWA icons are present and valid. Even if the button doesn't trigger it, Chrome will show an install icon (⊕) in the address bar when the app is installable. Check your browser's address bar for the install icon!</p>
+                  <p className="mt-2 font-semibold">🔍 Check Console (F12) for detailed install status and any missing requirements.</p>
                 </div>
               </div>
             </div>
