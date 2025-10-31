@@ -21,11 +21,21 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { account, isConnected } = useWallet();
-  const { canInstall, isIOS, isStandalone, installApp } = usePWAInstall();
+  const { canInstall, isIOS, isStandalone, installApp, deferredPrompt } = usePWAInstall();
   const [balance, setBalance] = useState('0.000000');
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+
+  // Debug: Log install status
+  useEffect(() => {
+    console.log('Home Page - Install Status:', {
+      canInstall,
+      isIOS,
+      isStandalone,
+      hasDeferredPrompt: !!deferredPrompt,
+    });
+  }, [canInstall, isIOS, isStandalone, deferredPrompt]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -52,10 +62,19 @@ const Home = () => {
   };
 
   const handleDownloadClick = async () => {
+    console.log('Download button clicked', { isIOS, canInstall });
     if (isIOS) {
       setShowIOSInstructions(!showIOSInstructions);
     } else {
-      await installApp();
+      try {
+        await installApp();
+      } catch (error) {
+        console.error('Install error:', error);
+        // Show fallback instructions for desktop
+        if (window.confirm('Install prompt not available. Would you like to see manual installation instructions?')) {
+          alert('To install:\n\nChrome/Edge: Look for the install icon (⊕) in the address bar\nFirefox: Menu → Install\nOr check browser settings for "Install App" option');
+        }
+      }
     }
   };
 
@@ -67,7 +86,9 @@ const Home = () => {
           <div className="mb-4">
             <button
               onClick={handleDownloadClick}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl shadow-lg p-4 sm:p-5 flex items-center justify-center gap-3 hover:opacity-90 active:opacity-80 transition-all touch-manipulation"
+              type="button"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl shadow-lg p-4 sm:p-5 flex items-center justify-center gap-3 hover:opacity-90 active:opacity-80 transition-all touch-manipulation cursor-pointer"
+              aria-label={isIOS ? 'Show installation instructions' : 'Install StablePay app'}
             >
               <Download className="w-5 h-5 sm:w-6 sm:h-6" />
               <span className="text-sm sm:text-base font-semibold">

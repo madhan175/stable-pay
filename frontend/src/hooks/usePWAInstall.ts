@@ -35,12 +35,21 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
       const userAgent = window.navigator.userAgent.toLowerCase();
       const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
       setIsIOS(isIOSDevice);
+      
+      // Debug logging
+      console.log('PWA Install Check:', {
+        isStandalone: isInStandaloneMode,
+        isIOS: isIOSDevice,
+        userAgent: userAgent,
+        hasServiceWorker: 'serviceWorker' in navigator
+      });
     };
 
     checkStandalone();
 
     // Handle beforeinstallprompt event (Android/Chrome/Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
@@ -48,34 +57,55 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Check again after a short delay to ensure all checks are done
-    const timeoutId = setTimeout(checkStandalone, 100);
+    const timeoutId = setTimeout(checkStandalone, 500);
+
+    // Also check periodically for the event (in case it fires later)
+    const intervalId = setInterval(() => {
+      checkStandalone();
+    }, 2000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       clearTimeout(timeoutId);
+      clearInterval(intervalId);
     };
   }, []);
 
   const installApp = async () => {
-    if (deferredPrompt) {
-      // Show the install prompt
-      deferredPrompt.prompt();
-      
-      // Wait for the user to respond
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
+    try {
+      if (deferredPrompt) {
+        console.log('Triggering install prompt...');
+        // Show the install prompt
+        await deferredPrompt.prompt();
+        
+        // Wait for the user to respond
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        
+        // Clear the deferred prompt since it can only be used once
+        setDeferredPrompt(null);
       } else {
-        console.log('User dismissed the install prompt');
+        console.warn('No deferred prompt available. User may need to use browser menu to install.');
+        // Fallback: Try to show manual instructions
+        alert('To install this app:\n\nChrome/Edge: Click the install icon in the address bar\nSafari (iOS): Tap Share → Add to Home Screen');
       }
-      
-      // Clear the deferred prompt since it can only be used once
-      setDeferredPrompt(null);
+    } catch (error) {
+      console.error('Error installing app:', error);
+      alert('Installation failed. Please try using your browser\'s install option.');
     }
   };
 
-  const canInstall = !isStandalone && (deferredPrompt !== null || isIOS);
+  // Show button if:
+  // 1. Not already in standalone mode
+  // 2. Either we have a deferred prompt OR it's iOS (which doesn't use beforeinstallprompt)
+  // 3. Or if service worker is supported (PWA capable browser)
+  const isPWACapable = 'serviceWorker' in navigator;
+  const canInstall = !isStandalone && (deferredPrompt !== null || isIOS || isPWACapable);
 
   return {
     deferredPrompt,
