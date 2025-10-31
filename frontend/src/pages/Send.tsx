@@ -10,10 +10,9 @@ import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
 import { paymentsAPI } from '../services/api';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const Send = () => {
-  const navigate = useNavigate();
   const { account, isConnected } = useWallet();
   const { user, createTransaction, isLoading: kycLoading } = useKYC();
   const [inrAmount, setInrAmount] = useState('');
@@ -145,8 +144,9 @@ const Send = () => {
         feeData = {
           gasPrice: gasPrice || ethers.parseUnits('20', 'gwei'),
           maxFeePerGas: null,
-          maxPriorityFeePerGas: null
-        };
+          maxPriorityFeePerGas: null,
+          toJSON: () => ({})
+        } as ethers.FeeData;
       }
       const gasPrice = feeData.gasPrice || feeData.maxFeePerGas || ethers.parseUnits('20', 'gwei');
       
@@ -308,75 +308,75 @@ const Send = () => {
   }, [inrAmount]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="max-w-2xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 lg:py-16">
+      <div className="text-center mb-6 sm:mb-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
           Send Payment
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-sm sm:text-base lg:text-lg text-gray-600">
           Convert INR to USDT and send to merchant wallet
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl p-4 sm:p-6 lg:p-8 border border-gray-100">
         {/* Currency Rates */}
         <div className="mb-6">
           <CurrencyRateDisplay />
         </div>
         
         {/* INR Input */}
-        <div className="mb-8">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <div className="mb-6 sm:mb-8">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
             Amount in INR
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-4 text-gray-500 font-medium">₹</span>
+            <span className="absolute left-3 sm:left-4 top-3.5 sm:top-4 text-gray-500 font-medium text-sm sm:text-base">₹</span>
             <input
               type="number"
               value={inrAmount}
               onChange={(e) => setInrAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full pl-8 pr-4 py-4 text-xl font-semibold border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-0 outline-none transition-colors duration-200"
+              className="w-full pl-8 sm:pl-10 pr-4 py-3 sm:py-4 text-lg sm:text-xl font-semibold border-2 border-gray-200 rounded-xl sm:rounded-2xl focus:border-blue-500 focus:ring-0 outline-none transition-colors duration-200"
             />
           </div>
         </div>
 
         {/* Conversion Arrow */}
         {inrAmount && (
-          <div className="flex justify-center mb-8">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-full">
-              <ArrowRight className="w-6 h-6 text-white transform rotate-90" />
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2.5 sm:p-3 rounded-full">
+              <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-white transform rotate-90" />
             </div>
           </div>
         )}
 
         {/* USDT Output */}
         {usdtAmount && (
-          <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+          <div className="mb-6 sm:mb-8">
+            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
               Equivalent USDT
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-4 text-gray-500 font-medium">$</span>
+              <span className="absolute left-3 sm:left-4 top-3.5 sm:top-4 text-gray-500 font-medium text-sm sm:text-base">$</span>
               <input
                 type="text"
                 value={usdtAmount}
                 readOnly
-                className="w-full pl-8 pr-12 py-4 text-xl font-semibold bg-gray-50 border-2 border-gray-200 rounded-2xl"
+                className="w-full pl-8 sm:pl-10 pr-12 sm:pr-12 py-3 sm:py-4 text-lg sm:text-xl font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
               />
               {isConverting && (
-                <RefreshCw className="absolute right-4 top-4 w-6 h-6 text-blue-500 animate-spin" />
+                <RefreshCw className="absolute right-3 sm:right-4 top-3.5 sm:top-4 w-5 h-5 sm:w-6 sm:h-6 text-blue-500 animate-spin" />
               )}
             </div>
             
             {/* USD Value Display */}
             {usdAmount && (
-              <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-4">
+              <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4">
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">Current USD Value:</span>
+                  <DollarSign className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-green-800">Current USD Value:</span>
                 </div>
-                <div className="text-lg font-semibold text-green-900 mt-1">
+                <div className="text-base sm:text-lg font-semibold text-green-900 mt-1">
                   ${usdAmount} USD
                 </div>
                 <div className="text-xs text-green-600 mt-1">
@@ -387,18 +387,18 @@ const Send = () => {
             
             {/* Gas Fee Display */}
             {gasFee && (
-              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-xs font-bold">⛽</span>
                     </div>
-                    <span className="text-sm font-medium text-blue-800">Estimated Gas Fee:</span>
+                    <span className="text-xs sm:text-sm font-medium text-blue-800">Estimated Gas Fee:</span>
                   </div>
                   {gasFeeLoading ? (
-                    <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                    <RefreshCw className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
                   ) : (
-                    <span className="text-sm font-semibold text-blue-900">
+                    <span className="text-xs sm:text-sm font-semibold text-blue-900 whitespace-nowrap">
                       {parseFloat(gasFee).toFixed(6)} ETH
                     </span>
                   )}
@@ -412,8 +412,8 @@ const Send = () => {
         )}
 
         {/* Merchant Address */}
-        <div className="mb-8">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <div className="mb-6 sm:mb-8">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
             Merchant Wallet Address
           </label>
           <input
@@ -421,16 +421,16 @@ const Send = () => {
             value={merchantAddress}
             onChange={(e) => setMerchantAddress(e.target.value)}
             placeholder="0x..."
-            className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-0 outline-none transition-colors duration-200"
+            className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-lg border-2 border-gray-200 rounded-xl sm:rounded-2xl focus:border-purple-500 focus:ring-0 outline-none transition-colors duration-200"
           />
         </div>
 
         {/* User Status */}
         {!user && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-800">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-yellow-800">
                 Phone verification required for transactions
               </span>
             </div>
@@ -439,12 +439,12 @@ const Send = () => {
 
         {/* Gas Fee Warning */}
         {gasFee && parseFloat(gasFee) > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4">
             <div className="flex items-center space-x-2">
-              <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xs font-bold">⛽</span>
               </div>
-              <span className="text-sm font-medium text-orange-800">
+              <span className="text-xs sm:text-sm font-medium text-orange-800">
                 Gas Fee Required: {parseFloat(gasFee).toFixed(6)} ETH
               </span>
             </div>
@@ -501,7 +501,7 @@ const Send = () => {
             <button
               onClick={handleSend}
               disabled={!usdtAmount || !merchantAddress || isSending || kycLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-base sm:text-lg hover:from-blue-700 hover:to-purple-700 active:from-blue-800 active:to-purple-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center space-x-2 touch-manipulation"
             >
               {isSending || kycLoading ? (
                 <>

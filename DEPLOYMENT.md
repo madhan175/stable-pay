@@ -14,17 +14,25 @@ StablePay2.0/
 
 ## 🚀 Deployment Overview
 
+**🚀 START HERE**: [Quick Deployment Steps](./QUICK-DEPLOYMENT-STEPS.md) - Follow this for fastest deployment
+
 ### Frontend → Vercel
 - **Location**: `frontend/` folder
 - **Platform**: Vercel
 - **Framework**: Vite + React
-- **Documentation**: See [frontend/README.md](./frontend/README.md)
+- **Documentation**: 
+  - [Quick Steps](./QUICK-DEPLOYMENT-STEPS.md)
+  - [Detailed Guide](./frontend/VERCEL-DEPLOYMENT.md)
+  - [README](./frontend/README.md)
 
 ### Backend → Render
 - **Location**: `backend/` folder
 - **Platform**: Render
 - **Runtime**: Node.js
-- **Documentation**: See [backend/RENDER-DEPLOYMENT.md](./backend/RENDER-DEPLOYMENT.md)
+- **Documentation**: 
+  - [Quick Steps](./QUICK-DEPLOYMENT-STEPS.md)
+  - [Detailed Guide](./backend/RENDER-DEPLOYMENT.md)
+  - [Infrastructure Config](./backend/render.yaml)
 
 ### Smart Contracts
 - **Location**: `contarcts/` folder
@@ -78,9 +86,19 @@ ALLOWED_ORIGINS=https://your-frontend.vercel.app
 
 ## 📚 Detailed Documentation
 
+### Deployment Guides
+
+- **🚀 Quick Start**: [QUICK-DEPLOYMENT-STEPS.md](./QUICK-DEPLOYMENT-STEPS.md) - Step-by-step deployment guide
+- **🔧 Environment Variables**: [DEPLOYMENT-ENV-VARS.md](./DEPLOYMENT-ENV-VARS.md) - Complete env vars reference
+- **📦 Backend Details**: [backend/RENDER-DEPLOYMENT.md](./backend/RENDER-DEPLOYMENT.md) - Render deployment guide
+- **🌐 Frontend Details**: [frontend/VERCEL-DEPLOYMENT.md](./frontend/VERCEL-DEPLOYMENT.md) - Vercel deployment guide
+
+### Other Documentation
+
 - **Frontend**: [frontend/README.md](./frontend/README.md)
 - **Backend**: [backend/RENDER-DEPLOYMENT.md](./backend/RENDER-DEPLOYMENT.md)
 - **Contracts**: [contarcts/README.md](./contarcts/README.md)
+- **Infrastructure**: [backend/render.yaml](./backend/render.yaml)
 
 ## 🆘 Troubleshooting
 

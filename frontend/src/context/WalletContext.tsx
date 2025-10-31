@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { userAPI } from '../services/api';
 
 interface WalletContextType {
   account: string | null;
@@ -80,6 +81,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setProvider(provider);
         setAccount(accounts[0]);
         
+        // Link wallet to user if user is logged in
+        linkWalletToUser(accounts[0]);
+        
         console.log('🎉 [METAMASK] Successfully connected to Sepolia testnet');
       } catch (error: any) {
         console.error('❌ [METAMASK] Failed to connect wallet:', error);
@@ -101,6 +105,29 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setProvider(null);
   };
 
+  // Helper function to link wallet address to user
+  const linkWalletToUser = async (walletAddress: string) => {
+    try {
+      // Get user from localStorage
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        if (user.id && walletAddress) {
+          try {
+            await userAPI.linkWallet(user.id, walletAddress);
+            console.log('✅ [WALLET] Linked wallet address to user');
+          } catch (linkError) {
+            // Silently fail - not critical if linking fails
+            console.warn('⚠️ [WALLET] Could not link wallet to user:', linkError);
+          }
+        }
+      }
+    } catch (error) {
+      // Silently fail - not critical
+      console.warn('⚠️ [WALLET] Error linking wallet:', error);
+    }
+  };
+
   useEffect(() => {
     // Check if already connected
     if (typeof window.ethereum !== 'undefined' && window.ethereum) {
@@ -118,6 +145,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (network.chainId === 11155111n) {
               setProvider(provider);
               setAccount(accounts[0]);
+              // Link wallet to user if user is logged in
+              linkWalletToUser(accounts[0]);
               console.log('✅ [METAMASK] Already connected to Sepolia testnet');
             } else {
               console.log('⚠️ [METAMASK] Not on Sepolia testnet, contracts may not be available');
@@ -137,6 +166,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           disconnect();
         } else {
           setAccount(accounts[0]);
+          // Try to link wallet to user if user is logged in
+          linkWalletToUser(accounts[0]);
         }
       };
 

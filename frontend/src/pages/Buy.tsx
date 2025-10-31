@@ -8,50 +8,50 @@ const Buy = () => {
   const [done, setDone] = useState(false);
 
   return (
-    <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Buy Stablecoins Instantly</h1>
+    <div className="max-w-xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Buy Stablecoins Instantly</h1>
 
-      <div className="bg-white rounded-2xl shadow p-6 border border-gray-100 space-y-4">
+      <div className="bg-white rounded-2xl shadow p-4 sm:p-6 border border-gray-100 space-y-3 sm:space-y-4">
         <div>
-          <label className="text-sm font-medium text-gray-700">Enter INR Amount</label>
+          <label className="text-xs sm:text-sm font-medium text-gray-700">Enter INR Amount</label>
           <div className="mt-2 relative">
-            <span className="absolute left-3 top-3 text-gray-500">₹</span>
+            <span className="absolute left-3 top-3 text-gray-500 text-sm sm:text-base">₹</span>
             <input
               type="number"
               value={inr}
               onChange={(e) => setInr(e.target.value)}
-              className="w-full pl-8 pr-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none"
+              className="w-full pl-8 sm:pl-10 pr-3 py-2.5 sm:py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 outline-none text-sm sm:text-base"
               placeholder="0.00"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="text-sm text-gray-600">Fixed Rate</div>
-            <div className="text-xl font-semibold">₹{rate} / coin</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-gray-600">Fixed Rate</div>
+            <div className="text-lg sm:text-xl font-semibold">₹{rate} / coin</div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="text-sm text-gray-600">You Receive</div>
-            <div className="text-xl font-semibold">{stable || '0.000000'}</div>
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-gray-600">You Receive</div>
+            <div className="text-lg sm:text-xl font-semibold">{stable || '0.000000'}</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <button className="rounded-xl border-2 border-gray-200 p-4 flex items-center justify-center space-x-2 hover:border-blue-300">
-            <QrCode className="w-5 h-5" />
-            <span>UPI</span>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <button className="rounded-xl border-2 border-gray-200 p-3 sm:p-4 flex items-center justify-center space-x-2 hover:border-blue-300 active:bg-gray-50 transition-all touch-manipulation">
+            <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm">UPI</span>
           </button>
-          <button className="rounded-xl border-2 border-gray-200 p-4 flex items-center justify-center space-x-2 hover:border-blue-300">
-            <CreditCard className="w-5 h-5" />
-            <span>Card</span>
+          <button className="rounded-xl border-2 border-gray-200 p-3 sm:p-4 flex items-center justify-center space-x-2 hover:border-blue-300 active:bg-gray-50 transition-all touch-manipulation">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm">Card</span>
           </button>
         </div>
 
         <button
           onClick={() => setDone(true)}
           disabled={!inr}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:bg-gray-400"
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors touch-manipulation text-sm sm:text-base"
         >
           Buy Now
         </button>

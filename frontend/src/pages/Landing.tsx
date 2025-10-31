@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Send, Wallet, Shield, Zap, Globe, CreditCard, Smartphone, Lock, CheckCircle, Star, Users, TrendingUp, Phone } from 'lucide-react';
+import { ArrowRight, Send, Wallet, Shield, Zap, Globe, CreditCard, Smartphone, Lock, CheckCircle, Star, Users, Phone } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useKYC } from '../context/KYCContext';
 import WalletConnect from '../components/WalletConnect';
@@ -40,14 +40,14 @@ const Landing = () => {
       {React.createElement(ThreeScene as any, { mousePosition: mousePos })}
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 pt-12 sm:pt-20 pb-16 sm:pb-32">
         <div className="text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full text-sm font-medium text-blue-700 mb-8">
+          <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 rounded-full text-xs sm:text-sm font-medium text-blue-700 mb-4 sm:mb-8">
             <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
             Now supporting UPI to USDT conversion
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-8 leading-tight px-2">
             Accept payments
             <br />
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
@@ -55,82 +55,82 @@ const Landing = () => {
             </span>
           </h1>
           
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base lg:text-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-2">
             Enable seamless payments from traditional UPI to modern stablecoins. 
             Your customers pay in INR, you receive USDT instantly. No complexity, just results.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 sm:mb-16 px-2">
             {!user ? (
-              <div className="flex flex-col items-center space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
-                  <Phone className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="flex flex-col items-center space-y-4 w-full sm:w-auto">
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-6 text-center w-full sm:w-auto">
+                  <Phone className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                     Get Started with StablePay
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-sm sm:text-base text-gray-600 mb-4">
                     Verify your phone number to start accepting payments
                   </p>
                   <button
                     onClick={() => setShowPhoneModal(true)}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+                    className="bg-blue-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center space-x-2 mx-auto touch-manipulation text-sm sm:text-base"
                   >
-                    <Phone className="w-5 h-5" />
+                    <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Verify Phone Number</span>
                   </button>
                 </div>
               </div>
             ) : !isConnected ? (
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center space-x-3 mb-4">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-green-800 font-medium">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center w-full sm:w-auto">
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-3 sm:p-4 flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-center">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm lg:text-base text-green-800 font-medium">
                     Phone Verified: {user.phone}
                   </span>
                 </div>
                 <WalletConnect />
-                <div className="text-sm text-gray-500">or</div>
+                <div className="text-xs sm:text-sm text-gray-500">or</div>
                 <Link
                   to="/send"
-                  className="group bg-white text-blue-600 border-2 border-blue-200 px-8 py-4 rounded-xl font-semibold text-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  className="group bg-white text-blue-600 border-2 border-blue-200 px-5 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg hover:border-blue-300 hover:bg-blue-50 active:bg-blue-100 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 touch-manipulation w-full sm:w-auto justify-center"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Try without wallet</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <Wallet className="w-5 h-5 text-green-600" />
-                  <span className="text-green-800 font-medium">
+              <div className="flex flex-col items-center space-y-3 sm:space-y-4 w-full sm:w-auto">
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-3 sm:p-4 flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
+                  <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm lg:text-base text-green-800 font-medium">
                     Connected: {account?.slice(0, 6)}...{account?.slice(-4)}
                   </span>
                 </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                  <span className="text-blue-800 font-medium">
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 sm:p-4 flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm lg:text-base text-blue-800 font-medium">
                     Phone: {user.phone} | KYC: {user.kyc_status}
                   </span>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                   <Link
                     to="/send"
-                    className="group bg-blue-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="group bg-blue-600 text-white px-5 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 touch-manipulation justify-center"
                   >
-                    <Send className="w-5 h-5" />
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Send Payment</span>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                   
                   <Link
                     to="/receive"
-                    className="group bg-white text-gray-900 border-2 border-gray-200 px-8 py-4 rounded-xl font-semibold text-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="group bg-white text-gray-900 border-2 border-gray-200 px-5 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg hover:border-blue-300 hover:bg-blue-50 active:bg-gray-100 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 touch-manipulation justify-center"
                   >
-                    <Wallet className="w-5 h-5" />
+                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>View Dashboard</span>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
@@ -159,42 +159,42 @@ const Landing = () => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-gray-500 mb-16">
-            <div className="flex items-center space-x-2">
-              <Shield className="w-4 h-4" />
+          <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 text-xs sm:text-sm text-gray-500 mb-8 sm:mb-16 px-2">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span>Bank-level security</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Globe className="w-4 h-4" />
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span>Global coverage</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4" />
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
               <span>Instant settlement</span>
             </div>
           </div>
         </div>
 
         {/* Payment Demo Card */}
-        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden mx-2 sm:mx-auto">
           {isConnected && (
-            <div className="bg-green-50 border-b border-green-200 p-3">
+            <div className="bg-green-50 border-b border-green-200 p-2.5 sm:p-3">
               <div className="flex items-center justify-center space-x-2 text-green-700">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Wallet Connected</span>
+                <span className="text-xs sm:text-sm font-medium">Wallet Connected</span>
               </div>
             </div>
           )}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Payment Demo</h3>
-              <Lock className="w-5 h-5" />
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 sm:p-6 text-white">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-semibold">Payment Demo</h3>
+              <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div className="text-3xl font-bold">₹2,500.00</div>
-            <div className="text-blue-100 text-sm">≈ $30.00 USDT</div>
+            <div className="text-2xl sm:text-3xl font-bold">₹2,500.00</div>
+            <div className="text-blue-100 text-xs sm:text-sm">≈ $30.00 USDT</div>
           </div>
           
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <CreditCard className="w-5 h-5 text-gray-600" />
@@ -249,53 +249,53 @@ const Landing = () => {
       </div>
 
       {/* Features Section */}
-      <div className="bg-gray-50 py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+      <div className="bg-gray-50 py-12 sm:py-24">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="text-center mb-8 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               Built for the future of payments
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-sm sm:text-base lg:text-xl text-gray-600 max-w-3xl mx-auto px-2">
               Bridge traditional and digital payments with enterprise-grade infrastructure
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="bg-blue-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Zap className="w-7 h-7 text-blue-600" />
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="group bg-white p-5 sm:p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 active:scale-[0.98] touch-manipulation">
+              <div className="bg-blue-100 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Lightning Fast</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Lightning Fast</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 sm:mb-4">
                 Process payments in seconds with real-time INR to USDT conversion and instant blockchain settlement.
               </p>
-              <div className="text-sm text-blue-600 font-medium">
+              <div className="text-xs sm:text-sm text-blue-600 font-medium">
                 Average settlement: 3 seconds
               </div>
             </div>
             
-            <div className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="bg-green-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Shield className="w-7 h-7 text-green-600" />
+            <div className="group bg-white p-5 sm:p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 active:scale-[0.98] touch-manipulation">
+              <div className="bg-green-100 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Bank-Grade Security</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Bank-Grade Security</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 sm:mb-4">
                 Built on blockchain technology with MetaMask integration. Your funds are secure and transactions are transparent.
               </p>
-              <div className="text-sm text-green-600 font-medium">
+              <div className="text-xs sm:text-sm text-green-600 font-medium">
                 99.99% uptime guaranteed
               </div>
             </div>
             
-            <div className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="bg-purple-100 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Globe className="w-7 h-7 text-purple-600" />
+            <div className="group bg-white p-5 sm:p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 active:scale-[0.98] touch-manipulation">
+              <div className="bg-purple-100 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Global Reach</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Global Reach</h3>
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 sm:mb-4">
                 Accept payments from India while receiving stable, borderless USDT that works anywhere in the world.
               </p>
-              <div className="text-sm text-purple-600 font-medium">
+              <div className="text-xs sm:text-sm text-purple-600 font-medium">
                 Available in 180+ countries
               </div>
             </div>
@@ -304,32 +304,32 @@ const Landing = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
+      <div className="py-12 sm:py-24">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-center">
             <div className="group">
-              <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">
                 $2.4B+
               </div>
-              <div className="text-gray-600">Payment volume</div>
+              <div className="text-xs sm:text-sm text-gray-600">Payment volume</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors duration-300">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors duration-300">
                 50K+
               </div>
-              <div className="text-gray-600">Active merchants</div>
+              <div className="text-xs sm:text-sm text-gray-600">Active merchants</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors duration-300">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors duration-300">
                 99.9%
               </div>
-              <div className="text-gray-600">Success rate</div>
+              <div className="text-xs sm:text-sm text-gray-600">Success rate</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-300">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-300">
                 24/7
               </div>
-              <div className="text-gray-600">Support</div>
+              <div className="text-xs sm:text-sm text-gray-600">Support</div>
             </div>
           </div>
         </div>
@@ -465,32 +465,32 @@ const Landing = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 py-24">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 py-12 sm:py-24">
+        <div className="max-w-4xl mx-auto text-center px-3 sm:px-4 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             Ready to transform your payments?
           </h2>
-          <p className="text-xl text-blue-100 mb-12 leading-relaxed">
+          <p className="text-sm sm:text-base lg:text-xl text-blue-100 mb-8 sm:mb-12 leading-relaxed px-2">
             Join thousands of merchants already using StablePay to accept seamless INR to USDT payments.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
             <Link
               to="/send"
-              className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="group bg-white text-blue-600 px-5 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 touch-manipulation w-full sm:w-auto justify-center"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Get started now</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             
             <Link
               to="/receive"
-              className="group bg-transparent text-white border-2 border-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300 flex items-center space-x-2 transform hover:-translate-y-1"
+              className="group bg-transparent text-white border-2 border-white px-5 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg hover:bg-white hover:text-blue-600 active:bg-white active:text-blue-700 transition-all duration-300 flex items-center space-x-2 active:scale-95 touch-manipulation w-full sm:w-auto justify-center"
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>View demo</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
@@ -520,10 +520,10 @@ const Landing = () => {
         }}
       />
       {/* Guided workflow: Next step */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6">
         <Link
           to="/onboarding"
-          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+          className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:bg-blue-800 transition touch-manipulation text-xs sm:text-sm"
         >
           Start Onboarding
         </Link>

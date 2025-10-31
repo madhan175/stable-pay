@@ -1,4 +1,4 @@
-import { Lock, Wallet, CreditCard, Moon, Sun, LogOut, User, Phone, CheckCircle } from 'lucide-react';
+import { Lock, Wallet, CreditCard, Sun, LogOut, User, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
@@ -24,15 +24,15 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Profile & Settings</h1>
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 space-y-4 sm:space-y-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile & Settings</h1>
 
       {/* User Info */}
       {user && (
-        <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
-          <div className="flex items-center space-x-3 mb-4">
-            <User className="w-5 h-5 text-blue-600" />
-            <div className="font-semibold">Account Information</div>
+        <div className="bg-white rounded-2xl shadow p-4 sm:p-6 border border-gray-100">
+          <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+            <User className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <div className="font-semibold text-sm sm:text-base">Account Information</div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -75,17 +75,17 @@ const Profile = () => {
             <div className="text-sm text-gray-700 font-mono break-all">{account}</div>
             <button
               onClick={handleDisconnectWallet}
-              className="mt-2 px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+              className="mt-2 px-4 py-2.5 text-xs sm:text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 active:bg-red-100 transition touch-manipulation"
             >
               Disconnect Wallet
             </button>
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="text-sm text-gray-700">No wallet connected</div>
+            <div className="text-xs sm:text-sm text-gray-700">No wallet connected</div>
             <Link
               to="/receive"
-              className="inline-block mt-2 px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+              className="inline-block mt-2 px-4 py-2.5 text-xs sm:text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition touch-manipulation"
             >
               Connect Wallet
             </Link>
@@ -93,7 +93,7 @@ const Profile = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow p-4 sm:p-6 border border-gray-100">
         <div className="flex items-center space-x-3 mb-4">
           <CreditCard className="w-5 h-5 text-purple-600" />
           <div className="font-semibold">Linked Payment Methods</div>
@@ -130,18 +130,18 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
         {isConnected && (
           <button 
             onClick={handleDisconnectWallet}
-            className="px-4 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 active:bg-red-100 transition touch-manipulation text-sm"
           >
             Disconnect Wallet
           </button>
         )}
         <button 
           onClick={handleLogout}
-          className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition flex items-center space-x-2"
+          className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition flex items-center justify-center space-x-2 touch-manipulation text-sm"
         >
           <LogOut className="w-4 h-4" />
           <span>Logout</span>

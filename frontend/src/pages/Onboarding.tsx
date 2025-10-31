@@ -48,35 +48,35 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-            <User className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6 sm:py-12">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="text-center mb-6 sm:mb-10">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+            <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Getting started</h1>
-          <p className="text-gray-600">Complete onboarding in a few quick steps</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-3 sm:mt-4">Getting started</h1>
+          <p className="text-sm sm:text-base text-gray-600">Complete onboarding in a few quick steps</p>
         </div>
 
-        <div className="flex justify-center mb-10">
-          <div className="flex items-center space-x-6">
+        <div className="flex justify-center mb-6 sm:mb-10 overflow-x-auto pb-2 scrollbar-hide -mx-3 sm:-mx-0 px-3 sm:px-0">
+          <div className="flex items-center space-x-3 sm:space-x-6">
             {steps.map((s, i) => {
               const Icon = s.icon;
               const isActive = s.key === current;
               const isCompleted = s.key < current;
               return (
-                <div key={s.key} className="flex items-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500 text-white' : isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
-                    {isCompleted ? <CheckCircle className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
+                <div key={s.key} className="flex items-center flex-shrink-0">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500 text-white' : isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                    {isCompleted ? <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : <Icon className="w-5 h-5 sm:w-6 sm:h-6" />}
                   </div>
-                  {i < steps.length - 1 && <div className={`w-16 h-0.5 mx-3 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />}
+                  {i < steps.length - 1 && <div className={`w-8 sm:w-16 h-0.5 mx-2 sm:mx-3 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />}
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
           {current === 1 && (
             <div className="max-w-lg mx-auto text-center space-y-4">
               <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 rounded-2xl h-48 flex items-center justify-center text-white">
