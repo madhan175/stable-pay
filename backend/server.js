@@ -608,29 +608,55 @@ app.post('/kyc/verify', async (req, res) => {
 app.post('/user/link-wallet', async (req, res) => {
   try {
     const { userId, walletAddress } = req.body;
+    
+    console.log('🔗 [WALLET] Link wallet request:', { userId: userId?.substring(0, 8) + '...', walletAddress: walletAddress?.substring(0, 10) + '...' });
+    
     if (!userId || !walletAddress) {
+      console.warn('⚠️ [WALLET] Missing required fields');
       return res.status(400).json({ error: 'User ID and wallet address are required' });
     }
 
     // Validate wallet address format (basic check)
     if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      console.warn('⚠️ [WALLET] Invalid wallet address format:', walletAddress);
       return res.status(400).json({ error: 'Invalid wallet address format' });
     }
 
     try {
-      const updatedUser = await supabaseService.updateUser(userId, {
+      // Validate userId format (should be UUID or valid string)
+      if (typeof userId !== 'string' || userId.trim().length === 0) {
+        console.warn('⚠️ [WALLET] Invalid userId format');
+        return res.status(400).json({ error: 'Invalid user ID format' });
+      }
+
+      const updatedUser = await supabaseService.updateUser(userId.trim(), {
         wallet_address: walletAddress.toLowerCase(),
         updated_at: new Date().toISOString()
       });
-      console.log('✅ [WALLET] Linked wallet address to user:', userId);
+      
+      console.log('✅ [WALLET] Linked wallet address to user:', userId.substring(0, 8) + '...');
       res.json({ success: true, user: updatedUser });
     } catch (updateError) {
-      console.error('Failed to link wallet:', updateError);
-      res.status(500).json({ error: 'Failed to link wallet address' });
+      console.error('❌ [WALLET] Failed to link wallet:', updateError);
+      console.error('❌ [WALLET] Error details:', {
+        message: updateError?.message,
+        code: updateError?.code,
+        details: updateError?.details
+      });
+      
+      // Provide more specific error message
+      const errorMessage = updateError?.message || 'Failed to link wallet address';
+      res.status(500).json({ 
+        error: 'Failed to link wallet address',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      });
     }
   } catch (error) {
-    console.error('Link wallet error:', error);
-    res.status(500).json({ error: 'Failed to link wallet' });
+    console.error('❌ [WALLET] Link wallet error:', error);
+    res.status(500).json({ 
+      error: 'Failed to link wallet',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
