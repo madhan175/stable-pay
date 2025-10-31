@@ -1,18 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Send, Wallet, Shield, Zap, Globe, CreditCard, Smartphone, Lock, CheckCircle, Star, Users, TrendingUp, Phone } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useKYC } from '../context/KYCContext';
 import WalletConnect from '../components/WalletConnect';
 import PhoneOTPModal from '../components/PhoneOTPModal';
+import Intro from './Intro';
+import ThreeScene from '../components/ThreeScene';
 
 const Landing = () => {
   const { isConnected, account } = useWallet();
   const { user } = useKYC();
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // Always show intro briefly on each visit
+    setShowIntro(true);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      setMousePos({ x: (e.clientX - cx) / cx, y: (e.clientY - cy) / cy });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
 
   return (
     <div className="relative">
+      {showIntro && (
+        <Intro autoDismiss durationMs={1200} onComplete={() => setShowIntro(false)} />
+      )}
+
+      {/* Background international payment vibe */}
+      {React.createElement(ThreeScene as any, { mousePosition: mousePos })}
+
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
         <div className="text-center">
@@ -491,7 +517,6 @@ const Landing = () => {
         onClose={() => setShowPhoneModal(false)}
         onSuccess={() => {
           setShowPhoneModal(false);
-          // Optionally refresh the page or update state
         }}
       />
     </div>

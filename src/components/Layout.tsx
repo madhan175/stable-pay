@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Coins, ArrowLeftRight, Wallet } from 'lucide-react';
+import { Coins, ArrowLeftRight, Wallet, Shield } from 'lucide-react';
 import WalletConnect from './WalletConnect';
 
 const Layout = () => {
@@ -42,6 +42,18 @@ const Layout = () => {
               >
                 <Wallet className="w-4 h-4" />
                 <span>Receive</span>
+              </Link>
+
+              <Link
+                to="/admin"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/admin'
+                    ? 'bg-slate-100 text-slate-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Admin</span>
               </Link>
               
               <WalletConnect />

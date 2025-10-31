@@ -41,6 +41,12 @@ class SocketService {
       this.emitToListeners('kyc_update', data);
     });
 
+    // Payments stream
+    this.socket.on('new-payment', (data: any) => {
+      console.log('💸 [SOCKET] New payment received:', data);
+      this.emitToListeners('new-payment', data);
+    });
+
     return this.socket;
   }
 
@@ -98,6 +104,15 @@ class SocketService {
 
   offKYCUpdate(callback: (data: KYCUpdateData) => void): void {
     this.removeListener('kyc_update', callback);
+  }
+
+  // Payments specific methods
+  onNewPayment(callback: (data: any) => void): void {
+    this.addListener('new-payment', callback);
+  }
+
+  offNewPayment(callback: (data: any) => void): void {
+    this.removeListener('new-payment', callback);
   }
 
   // Connection status

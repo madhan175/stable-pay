@@ -8,6 +8,7 @@ import PhoneOTPModal from '../components/PhoneOTPModal';
 import KYCModal from '../components/KYCModal';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
+import { paymentsAPI } from '../services/api';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 
 const Send = () => {
@@ -202,6 +203,16 @@ const Send = () => {
             const hash = await frontendContractService.swapUSDTToFiat('INR', usdtAmount);
             setTxHash(hash);
             console.log('🔄 [CONTRACT] USDT to INR swap executed:', hash);
+            // Notify backend
+            try {
+              await paymentsAPI.save({
+                txHash: hash,
+                sender: account!,
+                receiver: merchantAddress,
+                amount: usdtAmount,
+                timestamp: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
           } catch (contractError: any) {
             console.warn('⚠️ [CONTRACT] Contract swap failed, falling back to mock:', contractError);
             
@@ -218,6 +229,15 @@ const Send = () => {
                 );
                 setTxHash(hash);
                 console.log('✅ [SEPOLIA] Real Sepolia transaction completed:', hash);
+                try {
+                  await paymentsAPI.save({
+                    txHash: hash,
+                    sender: account!,
+                    receiver: merchantAddress,
+                    amount: usdtAmount,
+                    timestamp: new Date().toISOString(),
+                  });
+                } catch (e) { console.warn('⚠️ Save payment failed:', e); }
                 setTxStatus('success');
                 return;
               } catch (sepoliaError: any) {
@@ -231,11 +251,29 @@ const Send = () => {
             const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
             setTxHash(hash);
             console.log('✅ [MOCK] Fallback transaction completed:', hash);
+            try {
+              await paymentsAPI.save({
+                txHash: hash,
+                sender: account!,
+                receiver: merchantAddress,
+                amount: usdtAmount,
+                timestamp: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
           }
         } else {
           // Fallback to mock transaction
           const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
           setTxHash(hash);
+          try {
+            await paymentsAPI.save({
+              txHash: hash,
+              sender: account!,
+              receiver: merchantAddress,
+              amount: usdtAmount,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (e) { console.warn('⚠️ Save payment failed:', e); }
         }
         
         setTxStatus('success');
