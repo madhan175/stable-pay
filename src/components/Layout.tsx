@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Coins, ArrowLeftRight, Wallet } from 'lucide-react';
+import { Coins, ArrowLeftRight, Wallet, Shield } from 'lucide-react';
 import WalletConnect from './WalletConnect';
 
 const Layout = () => {
@@ -20,6 +20,17 @@ const Layout = () => {
             </Link>
             
             <div className="flex items-center space-x-4">
+              <Link
+                to="/home"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/home'
+                    ? 'bg-slate-100 text-slate-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span>Home</span>
+              </Link>
+              
               <Link
                 to="/send"
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
@@ -43,6 +54,73 @@ const Layout = () => {
                 <Wallet className="w-4 h-4" />
                 <span>Receive</span>
               </Link>
+
+              <Link
+                to="/buy"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/buy'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Buy
+              </Link>
+
+              <Link
+                to="/history"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/history'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                History
+              </Link>
+
+              <Link
+                to="/profile"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/profile'
+                    ? 'bg-cyan-100 text-cyan-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Profile
+              </Link>
+
+              <Link
+                to="/kyc"
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  location.pathname === '/kyc'
+                    ? 'bg-fuchsia-100 text-fuchsia-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                KYC
+              </Link>
+
+              <div className="relative group">
+                <Link
+                  to="/admin"
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    location.pathname.startsWith('/admin')
+                      ? 'bg-slate-100 text-slate-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>Admin</span>
+                </Link>
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg py-2 hidden group-hover:block z-50">
+                  <Link to="/admin/overview" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Overview</Link>
+                  <Link to="/admin/users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Users</Link>
+                  <Link to="/admin/verify" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Verify Payments</Link>
+                  <Link to="/admin/merchants" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Merchants</Link>
+                  <Link to="/admin/analytics" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Analytics</Link>
+                  <Link to="/admin/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Settings</Link>
+                  <Link to="/admin/security" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Security</Link>
+                </div>
+              </div>
               
               <WalletConnect />
             </div>

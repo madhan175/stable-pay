@@ -8,9 +8,12 @@ import PhoneOTPModal from '../components/PhoneOTPModal';
 import KYCModal from '../components/KYCModal';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
+import { paymentsAPI } from '../services/api';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Send = () => {
+  const navigate = useNavigate();
   const { account, isConnected } = useWallet();
   const { user, createTransaction, isLoading: kycLoading } = useKYC();
   const [inrAmount, setInrAmount] = useState('');
@@ -202,6 +205,16 @@ const Send = () => {
             const hash = await frontendContractService.swapUSDTToFiat('INR', usdtAmount);
             setTxHash(hash);
             console.log('🔄 [CONTRACT] USDT to INR swap executed:', hash);
+            // Notify backend
+            try {
+              await paymentsAPI.save({
+                txHash: hash,
+                sender: account!,
+                receiver: merchantAddress,
+                amount: usdtAmount,
+                timestamp: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
           } catch (contractError: any) {
             console.warn('⚠️ [CONTRACT] Contract swap failed, falling back to mock:', contractError);
             
@@ -218,6 +231,15 @@ const Send = () => {
                 );
                 setTxHash(hash);
                 console.log('✅ [SEPOLIA] Real Sepolia transaction completed:', hash);
+                try {
+                  await paymentsAPI.save({
+                    txHash: hash,
+                    sender: account!,
+                    receiver: merchantAddress,
+                    amount: usdtAmount,
+                    timestamp: new Date().toISOString(),
+                  });
+                } catch (e) { console.warn('⚠️ Save payment failed:', e); }
                 setTxStatus('success');
                 return;
               } catch (sepoliaError: any) {
@@ -231,11 +253,29 @@ const Send = () => {
             const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
             setTxHash(hash);
             console.log('✅ [MOCK] Fallback transaction completed:', hash);
+            try {
+              await paymentsAPI.save({
+                txHash: hash,
+                sender: account!,
+                receiver: merchantAddress,
+                amount: usdtAmount,
+                timestamp: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('⚠️ Save payment failed:', e); }
           }
         } else {
           // Fallback to mock transaction
           const hash = await sendUSDT(merchantAddress, parseFloat(usdtAmount));
           setTxHash(hash);
+          try {
+            await paymentsAPI.save({
+              txHash: hash,
+              sender: account!,
+              receiver: merchantAddress,
+              amount: usdtAmount,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (e) { console.warn('⚠️ Save payment failed:', e); }
         }
         
         setTxStatus('success');
@@ -508,6 +548,14 @@ const Send = () => {
                 <p className="text-xs text-green-700 break-all">
                   TX: {txHash}
                 </p>
+                <div className="mt-3">
+                  <Link
+                    to="/receive"
+                    className="inline-block px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition"
+                  >
+                    View Dashboard
+                  </Link>
+                </div>
               </div>
             )}
             

@@ -16,20 +16,46 @@ const contractService = require('./services/contractService');
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+// Explicitly handle preflight
+app.options('*', cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// In-memory payments store (for demo)
+const payments = [];
 
 // File upload config
 const storage = multer.diskStorage({
@@ -244,6 +270,62 @@ app.post('/tx/execute/:transactionId', async (req, res) => {
   } catch (error) {
     console.error('Transaction execution error:', error);
     res.status(500).json({ error: 'Failed to execute transaction' });
+  }
+});
+
+// ----- Payments (USDT) sync from frontend -----
+// Store a verified payment and broadcast via socket
+app.post('/api/transactions', async (req, res) => {
+  try {
+    const { txHash, sender, receiver, amount, timestamp } = req.body || {};
+    if (!txHash || !sender || !receiver || !amount) {
+      return res.status(400).json({ error: 'txHash, sender, receiver, amount required' });
+    }
+
+    // Optional: verify transaction onchain if RPC provided
+    let status = 'success';
+    try {
+      const rpcUrl = process.env.ETHEREUM_RPC_URL;
+      if (rpcUrl && txHash.startsWith('0x')) {
+        const { ethers } = require('ethers');
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (!receipt || receipt.status !== 1) status = 'pending';
+      }
+    } catch (e) {
+      console.warn('⚠️ TX verify skipped:', e?.message || e);
+    }
+
+    const record = {
+      txHash,
+      sender,
+      receiver,
+      amount: String(amount),
+      status,
+      timestamp: timestamp || new Date().toISOString()
+    };
+    payments.unshift(record);
+
+    // Emit real-time event
+    io.emit('new-payment', record);
+
+    return res.json({ success: true, payment: record });
+  } catch (error) {
+    console.error('Save payment error:', error);
+    return res.status(500).json({ error: 'Failed to save payment' });
+  }
+});
+
+// Get merchant transactions by receiver wallet
+app.get('/api/merchant-transactions', async (req, res) => {
+  try {
+    const wallet = (req.query.wallet || '').toString().toLowerCase();
+    if (!wallet) return res.status(400).json({ error: 'wallet required' });
+    const items = payments.filter(p => (p.receiver || '').toLowerCase() === wallet);
+    return res.json(items);
+  } catch (error) {
+    console.error('Fetch merchant tx error:', error);
+    return res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });
 

@@ -834,9 +834,19 @@ export class FrontendContractService {
         contractAddress: CONTRACT_ADDRESS
       });
 
-      // Check contract state
-      const adminAddress = await contract.admin();
-      console.log('👤 [DEBUG] Admin address:', adminAddress);
+      // Check contract state (admin() may not exist on this ABI)
+      let adminAddress: string | null = null;
+      try {
+        const maybeAdmin = (contract as any).admin;
+        if (typeof maybeAdmin === 'function') {
+          adminAddress = await maybeAdmin();
+          console.log('👤 [DEBUG] Admin address:', adminAddress);
+        } else {
+          console.warn('⚠️ [DEBUG] admin() not available on contract ABI');
+        }
+      } catch (e) {
+        console.warn('⚠️ [DEBUG] admin() call failed; continuing without admin:', (e as any)?.message || e);
+      }
 
       // Check if currency is supported
       const isSupported = await contract.isCurrencySupported(toCurrency);
@@ -876,41 +886,45 @@ export class FrontendContractService {
       const signerAddress = await this.signer.getAddress();
       console.log('👤 [SEPOLIA] Signer address:', signerAddress);
 
-      // Get current gas price from Sepolia network
+      // Get current gas data from Sepolia network
       const provider = this.signer.provider;
       if (!provider) {
         throw new Error('Provider not available');
       }
       const feeData = await provider.getFeeData();
-      const gasPrice = feeData.gasPrice;
-      console.log('⛽ [SEPOLIA] Current gas price:', gasPrice?.toString(), 'wei');
+      console.log('⛽ [SEPOLIA] Fee data:', {
+        gasPrice: feeData.gasPrice?.toString(),
+        maxFeePerGas: feeData.maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString()
+      });
 
-      // Create a simple ETH transfer transaction as fallback
-      // This will use real Sepolia gas fees
-      const transaction = {
-        to: signerAddress, // Send to self (no actual transfer)
-        value: 0, // No ETH transfer
-        gasLimit: 21000, // Standard gas limit for simple transaction
-        gasPrice: gasPrice,
-        data: '0x', // Empty data
+      // Create a simple ETH transfer transaction as fallback (no estimateGas)
+      // Use fixed 21000 gas limit and EIP-1559 fees when available
+      const transaction: any = {
+        to: signerAddress,
+        value: 0n,
+        gasLimit: 21000n,
+        data: '0x'
       };
+
+      if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+        transaction.maxFeePerGas = feeData.maxFeePerGas;
+        transaction.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+      } else if (feeData.gasPrice) {
+        transaction.gasPrice = feeData.gasPrice;
+      }
 
       console.log('📝 [SEPOLIA] Transaction details:', {
         to: transaction.to,
         value: transaction.value,
         gasLimit: transaction.gasLimit,
         gasPrice: transaction.gasPrice?.toString(),
+        maxFeePerGas: transaction.maxFeePerGas?.toString?.(),
+        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas?.toString?.(),
         from: signerAddress
       });
 
-      // Estimate gas for the transaction
-      const gasEstimate = await this.signer.estimateGas(transaction);
-      console.log('⛽ [SEPOLIA] Gas estimate:', gasEstimate.toString());
-
-      // Update transaction with estimated gas
-      transaction.gasLimit = Number(gasEstimate);
-
-      // Execute the transaction
+      // Execute the transaction (skip estimateGas to avoid CALL_EXCEPTION)
       console.log('🚀 [SEPOLIA] Sending transaction to Sepolia network...');
       const tx = await this.signer.sendTransaction(transaction);
       
@@ -927,8 +941,8 @@ export class FrontendContractService {
       });
 
       // Calculate actual gas fees paid
-      const gasUsed = receipt?.gasUsed || gasEstimate;
-      const gasPricePaid = receipt?.gasPrice || gasPrice || 0n;
+      const gasUsed = receipt?.gasUsed || 21000n;
+      const gasPricePaid = (receipt?.gasPrice || feeData.gasPrice || feeData.maxFeePerGas || 0n);
       const totalGasFee = gasUsed * gasPricePaid;
       
       console.log('💰 [SEPOLIA] Gas fees paid:', {

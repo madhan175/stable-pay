@@ -58,4 +58,12 @@ export const currencyAPI = {
   convert: (amount: string, from: string, to: string) => api.get(`/currency/convert/${amount}/${from}/${to}`),
 };
 
+// Payments API (merchant)
+export const paymentsAPI = {
+  save: (payload: { txHash: string; sender: string; receiver: string; amount: string | number; timestamp?: string; }) =>
+    api.post('/api/transactions', payload),
+  listForMerchant: (wallet: string) =>
+    api.get(`/api/merchant-transactions`, { params: { wallet } }),
+};
+
 export default api;

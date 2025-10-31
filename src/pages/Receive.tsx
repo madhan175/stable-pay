@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Wallet, RefreshCw, ExternalLink, Copy, Check, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import WalletConnect from '../components/WalletConnect';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
 import { getUSDTBalance } from '../utils/blockchain';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
+import { paymentsAPI } from '../services/api';
+import socketService from '../services/socketService';
 
 interface Transaction {
   hash: string;
@@ -36,6 +39,12 @@ const Receive = () => {
   const [usdBalance, setUsdBalance] = useState('0.00');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [swapTransactions, setSwapTransactions] = useState<SwapTransaction[]>([]);
+  const [merchantPayments, setMerchantPayments] = useState<any[]>([]);
+  const totalReceived = merchantPayments
+    .filter(p => (p.status || 'success') === 'success')
+    .reduce((sum, p) => sum + (parseFloat(p.amount || '0') || 0), 0)
+    .toFixed(6);
+  const displayBalance = (parseFloat(balance || '0') + parseFloat(totalReceived || '0')).toFixed(6);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contractConnected] = useState(false);
@@ -45,9 +54,10 @@ const Receive = () => {
     
     setIsLoading(true);
     try {
-      const [balanceResult, txResult] = await Promise.all([
+      const [balanceResult, txResult, merchantTx] = await Promise.all([
         getUSDTBalance(account),
-        frontendContractService.getUserSwapHistory(account)
+        frontendContractService.getUserSwapHistory(account),
+        paymentsAPI.listForMerchant(account).then(r => r.data).catch(() => [])
       ]);
       
       setBalance(balanceResult.toFixed(6));
@@ -67,6 +77,7 @@ const Receive = () => {
       }));
       
       setTransactions(formattedTransactions);
+      setMerchantPayments(merchantTx);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -129,6 +140,22 @@ const Receive = () => {
       };
     }
   }, [contractConnected, account]);
+
+  // Live payments via socket
+  useEffect(() => {
+    if (!account) return;
+    const socket = socketService.connect();
+    const onPayment = (payment: any) => {
+      if ((payment?.receiver || '').toLowerCase() === account.toLowerCase()) {
+        setMerchantPayments(prev => [payment, ...prev]);
+      }
+    };
+    socketService.onNewPayment(onPayment);
+    return () => {
+      socketService.offNewPayment(onPayment);
+      socket?.disconnect();
+    };
+  }, [account]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -194,7 +221,7 @@ const Receive = () => {
                 <span className="text-sm font-medium text-gray-600">USDT Balance</span>
                 <div className="flex items-center space-x-2">
                   <span className="text-3xl font-bold text-gray-900">
-                    ${balance}
+                    ${displayBalance}
                   </span>
                   <span className="text-sm text-gray-500">USDT</span>
                 </div>
@@ -206,11 +233,22 @@ const Receive = () => {
                     <span className="text-sm font-medium text-green-800">USD Value:</span>
                   </div>
                   <div className="text-lg font-semibold text-green-900 mt-1">
-                    ${usdBalance} USD
+                    ${(parseFloat(displayBalance) || 0).toFixed(2)} USD
                   </div>
                   <div className="text-xs text-green-600 mt-1">
                     USDT is pegged to USD (1:1 ratio)
                   </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 md:col-span-2">
+                <span className="text-sm font-medium text-gray-600">Received (App Calculated)</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-3xl font-bold text-gray-900">+${totalReceived}</span>
+                  <span className="text-sm text-gray-500">USDT</span>
+                </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  Sum of successful incoming payments saved by the backend
                 </div>
               </div>
             </div>
@@ -431,8 +469,53 @@ const Receive = () => {
               </div>
             )}
           </div>
+
+          {/* Merchant Payments (Backend verified) */}
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div className="p-8 border-b border-gray-100">
+              <h2 className="text-2xl font-semibold text-gray-900">Incoming Payments</h2>
+              <p className="text-gray-600 mt-2">Saved by backend, updates live</p>
+            </div>
+            {merchantPayments.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No payments yet</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (USDT)</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Hash</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {merchantPayments.map((p) => (
+                      <tr key={p.txHash} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-mono">{p.sender?.slice(0, 6)}...{p.sender?.slice(-4)}</td>
+                        <td className="px-6 py-4 text-sm font-semibold text-green-600">+${parseFloat(p.amount || '0').toFixed(6)}</td>
+                        <td className="px-6 py-4 text-xs font-mono break-all">{p.txHash}</td>
+                        <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded-full ${p.status==='success'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}`}>{p.status}</span></td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(p.timestamp).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
+      {/* Guided workflow: Next step */}
+      <div className="fixed bottom-6 right-6">
+        <Link
+          to="/history"
+          className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+        >
+          Next: History
+        </Link>
+      </div>
     </div>
   );
 };

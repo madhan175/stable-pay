@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import PhoneVerification from '../components/PhoneVerification';
 import KYCUpload from '../components/KYCUpload';
 import { CheckCircle, Shield, FileText, Phone } from 'lucide-react';
@@ -126,6 +126,15 @@ const KYC = () => {
               </div>
             </div>
           )}
+        </div>
+        {/* Guided workflow: Next step */}
+        <div className="fixed bottom-6 right-6">
+          <Link
+            to="/send"
+            className="px-5 py-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+          >
+            Next: Send
+          </Link>
         </div>
       </div>
     </div>
