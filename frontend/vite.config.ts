@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'StablePay 2.0',
@@ -18,7 +18,8 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/?utm_source=pwa',
+        id: '/',
         categories: ['finance', 'business', 'productivity'],
         icons: [
           {
@@ -79,6 +80,9 @@ export default defineConfig({
         enabled: true,
         type: 'module',
       },
+      // Ensure service worker is registered for iOS PWA
+      strategies: 'generateSW',
+      injectRegister: 'auto',
     }),
   ],
   optimizeDeps: {
