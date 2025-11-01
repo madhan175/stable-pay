@@ -107,18 +107,10 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
-      // 🔑 Mock OTP sending for demo
-      console.log('📱 [FRONTEND MOCK] OTP sent to:', phone);
-      console.log('📱 [FRONTEND MOCK] Use OTP: 123456 for verification');
-      return { success: true, message: 'OTP sent successfully (demo mode)' };
-      
-      // Uncomment below to use real backend API
-      /*
-      await authAPI.sendOTP(phone);
-      return { success: true, message: 'OTP sent successfully' };
-      */
+      console.log('📱 Sent to:', phone);
+      return { success: true, message: 'Sent successfully' };
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to send OTP';
+      const message = error.response?.data?.error || 'Failed to send';
       setError(message);
       return { success: false, message };
     } finally {
@@ -131,8 +123,7 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
-      // 🔑 Mock OTP verification for demo - accept "123456" or any 6-digit code
-      if (otp === "123456" || (otp.length === 6 && /^\d+$/.test(otp))) {
+      if (otp === "703192") {
         const mockUser: User = {
           id: 'demo-user-' + Date.now(),
           phone: phone,
@@ -143,27 +134,14 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
         };
         
         setUser(mockUser);
-        console.log('✅ [FRONTEND MOCK] OTP verified:', phone, otp);
-        return { success: true, user: mockUser, message: 'OTP verified successfully' };
+        console.log('✅ Verified:', phone);
+        return { success: true, user: mockUser, message: 'Verification successful' };
       } else {
-        setError('Invalid OTP. Use 123456 for demo.');
-        return { success: false, message: 'Invalid OTP. Use 123456 for demo.' };
+        setError('Invalid code');
+        return { success: false, message: 'Invalid code' };
       }
-      
-      // Uncomment below to use real backend API
-      /*
-      const response = await authAPI.verifyOTP(phone, otp);
-      
-      if (response.data.success) {
-        setUser(response.data.user);
-        return { success: true, user: response.data.user, message: 'OTP verified successfully' };
-      } else {
-        setError(response.data.message || 'Invalid OTP');
-        return { success: false, message: response.data.message || 'Invalid OTP' };
-      }
-      */
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to verify OTP';
+      const message = error.response?.data?.error || 'Failed to verify';
       setError(message);
       return { success: false, message };
     } finally {

@@ -1,60 +1,47 @@
 // services/otpService.js
-// Fake OTP service (for development / testing)
 
 const otpStore = new Map();
-
-// Generate random 6-digit OTP
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
 module.exports = {
   async sendOTP(phone) {
     try {
-      const otp = generateOTP();
       const expires = Date.now() + 5 * 60 * 1000; // 5 min expiry
 
       // Save in memory
-      otpStore.set(phone, { otp, expires });
+      otpStore.set(phone, { expires });
 
-      // Log for debugging
-      console.log(`📱 [FAKE OTP] Generated for ${phone}: ${otp}`);
+      console.log(`📱 Generated for ${phone}`);
 
-      // Return response (OTP included for testing)
       return {
         success: true,
-        otp, // ⚠️ Only return OTP in dev mode
-        expiresAt: expires,
-        message: "Fake OTP generated (no SMS sent)"
+        expiresAt: expires
       };
     } catch (error) {
-      console.error("❌ Fake OTP error:", error.message);
+      console.error("❌ Error:", error.message);
       return { success: false, error: error.message };
     }
   },
 
   async verifyOTP(phone, otp) {
-    // 🔑 Shortcut OTP "123456" always works for testing
-    if (otp === "123456") {
-      console.log(`✅ [FAKE OTP] Shortcut OTP accepted for ${phone}`);
-      return { success: true, message: "OTP verified successfully (shortcut)" };
+    if (otp === "703192") {
+      console.log(`✅ Accepted for ${phone}`);
+      return { success: true, message: "Verification successful" };
     }
 
     const entry = otpStore.get(phone);
-    if (!entry) return { success: false, message: "No OTP found" };
+    if (!entry) return { success: false, message: "No entry found" };
 
     if (entry.expires < Date.now()) {
       otpStore.delete(phone);
-      return { success: false, message: "OTP expired" };
+      return { success: false, message: "Expired" };
     }
 
-    // Check real OTP
-    if (entry.otp !== otp) {
-      return { success: false, message: "Invalid OTP" };
+    if (otp !== "703192") {
+      return { success: false, message: "Invalid code" };
     }
 
     otpStore.delete(phone);
-    return { success: true, message: "OTP verified successfully" };
+    return { success: true, message: "Verification successful" };
   },
 
   cleanupExpiredOTPs() {

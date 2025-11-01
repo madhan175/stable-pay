@@ -11,7 +11,6 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [generatedOTP, setGeneratedOTP] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,11 +26,10 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
 
     const result = await sendOTP(phone);
     
-    if (result.success && result.otp) {
-      setGeneratedOTP(result.otp);
+    if (result.success) {
       setStep('otp');
     } else {
-      setError(result.error || 'Failed to send OTP');
+      setError(result.error || 'Failed to send');
     }
     
     setIsLoading(false);
@@ -132,12 +130,6 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
             />
           </div>
 
-          {/* Demo OTP Display */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Demo OTP:</strong> {generatedOTP}
-            </p>
-          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">

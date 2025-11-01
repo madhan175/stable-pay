@@ -172,7 +172,7 @@ const PhoneOTPModal: React.FC<PhoneOTPModalProps> = ({ isOpen, onClose, onSucces
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="123456"
+                  placeholder="000000"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-2xl font-mono tracking-widest"
                 />
               </div>

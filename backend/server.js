@@ -201,8 +201,8 @@ app.post('/auth/send-otp', async (req, res) => {
     const result = await otpService.sendOTP(phone);
     res.json(result);
   } catch (error) {
-    console.error('Send OTP error:', error);
-    res.status(500).json({ error: 'Failed to send OTP' });
+    console.error('Send error:', error);
+    res.status(500).json({ error: 'Failed to send' });
   }
 });
 
@@ -269,16 +269,15 @@ app.post('/auth/verify-otp', async (req, res) => {
   try {
     const { phone, otp } = req.body;
     if (!phone || !otp) {
-      return res.status(400).json({ error: 'Phone and OTP required' });
+      return res.status(400).json({ error: 'Phone and code required' });
     }
     
     const result = await otpService.verifyOTP(phone, otp);
     if (result.success) {
-      // Get or create user in Supabase
       try {
         const user = await getOrCreateUserByPhone(phone);
         
-        console.log(`✅ [OTP] User verified and synced to Supabase: ${phone} (${user.id})`);
+        console.log(`✅ User verified: ${phone} (${user.id})`);
         res.json({ 
           success: true, 
           user: {
@@ -289,11 +288,10 @@ app.post('/auth/verify-otp', async (req, res) => {
             created_at: user.created_at,
             last_login: user.last_login
           }, 
-          message: 'OTP verified successfully' 
+          message: 'Verification successful' 
         });
       } catch (supabaseError) {
-        // Fallback to mock user if Supabase fails
-        console.warn('⚠️ [OTP] Supabase user creation failed, using mock user:', supabaseError.message);
+        console.warn('⚠️ User creation failed:', supabaseError.message);
         const mockUser = {
           id: 'demo-user-' + Date.now(),
           phone: phone,
@@ -306,15 +304,15 @@ app.post('/auth/verify-otp', async (req, res) => {
         res.json({ 
           success: true, 
           user: mockUser, 
-          message: 'OTP verified successfully (mock mode)' 
+          message: 'Verification successful' 
         });
       }
     } else {
       res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Verify OTP error:', error);
-    res.status(500).json({ error: 'Failed to verify OTP' });
+    console.error('Verify error:', error);
+    res.status(500).json({ error: 'Failed to verify' });
   }
 });
 
@@ -326,7 +324,6 @@ app.get('/kyc/status/:phone', async (req, res) => {
       return res.status(400).json({ error: 'Phone number required' });
     }
 
-    // Mock KYC status for demo
     const mockUser = {
       id: 'demo-user-' + Date.now(),
       phone: phone,

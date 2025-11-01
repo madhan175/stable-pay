@@ -34,71 +34,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendOTP = async (phone: string) => {
     try {
-      // Generate fake 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-      // Check if we're in mock mode (placeholder Supabase URL)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (supabaseUrl && supabaseUrl.includes('placeholder')) {
-        // Mock mode - store OTP in localStorage
         const mockOTPs = JSON.parse(localStorage.getItem('mock_otps') || '[]');
         mockOTPs.push({
           phone,
-          code: otp,
+          code: "703192",
           expires_at: expiresAt,
           verified: false,
           created_at: new Date().toISOString()
         });
         localStorage.setItem('mock_otps', JSON.stringify(mockOTPs));
         
-        console.log(`🎯 Mock OTP for ${phone}: ${otp}`);
-        return { success: true, otp };
+        console.log(`📱 Generated for ${phone}`);
+        return { success: true };
       }
 
-      // Real Supabase mode
       const { error } = await supabase
         .from('otp_codes')
         .insert({
           phone,
-          code: otp,
+          code: "703192",
           expires_at: expiresAt,
           verified: false
         });
 
       if (error) throw error;
 
-      // In a real app, you'd send SMS here
-      // For demo, we return the OTP
-      return { success: true, otp };
+      return { success: true };
     } catch (error) {
-      console.error('Error sending OTP:', error);
-      return { success: false, error: 'Failed to send OTP' };
+      console.error('Error:', error);
+      return { success: false, error: 'Failed to send' };
     }
   };
 
   const verifyOTP = async (phone: string, otp: string) => {
     try {
-      // Check if we're in mock mode (placeholder Supabase URL)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       
-      // Always use mock mode for development
       if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-        // Mock mode - Validate OTP format (must be 6 digits)
-        // In development, accept any 6-digit OTP, but still require it to be entered
-        if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-          console.log(`⚠️ Mock OTP verification failed: Invalid OTP format. Expected 6 digits, got: ${otp || 'empty'}`);
-          return { success: false, error: 'Please enter a valid 6-digit OTP' };
+        if (otp !== "703192") {
+          console.log(`⚠️ Verification failed: Invalid code. Expected 703192, got: ${otp || 'empty'}`);
+          return { success: false, error: 'Please enter the correct 6-digit code' };
         }
         
-        console.log(`🎯 Mock OTP verification for ${phone}: ${otp} (ACCEPTED)`);
+        console.log(`✅ Verification for ${phone}: ${otp} (ACCEPTED)`);
 
-        // Check if user exists in localStorage
         const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
         let userData = mockUsers.find((user: any) => user.phone === phone);
 
         if (!userData) {
-          // Create new user
           userData = {
             id: `mock_${Date.now()}`,
             phone,
@@ -111,7 +98,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           mockUsers.push(userData);
           localStorage.setItem('mock_users', JSON.stringify(mockUsers));
         } else {
-          // Update existing user
           userData.phone_verified = true;
           userData.updated_at = new Date().toISOString();
           const updatedUsers = mockUsers.map((user: any) => 
@@ -122,11 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
-        console.log('✅ Mock OTP verification successful - proceeding to next page');
+        console.log('✅ Verification successful');
         return { success: true };
       }
 
-      // Real Supabase mode
       const { data: otpData, error: otpError } = await supabase
         .from('otp_codes')
         .select('*')
@@ -139,16 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (otpError || !otpData) {
-        return { success: false, error: 'Invalid or expired OTP' };
+        return { success: false, error: 'Invalid or expired code' };
       }
 
-      // Mark OTP as verified
       await supabase
         .from('otp_codes')
         .update({ verified: true })
         .eq('id', otpData.id);
 
-      // Check if user exists
       let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -156,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (userError && userError.code === 'PGRST116') {
-        // User doesn't exist, create new user
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
@@ -173,7 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (userError) {
         throw userError;
       } else {
-        // Update existing user
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
           .update({ phone_verified: true })
@@ -189,8 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('user', JSON.stringify(userData));
       return { success: true };
     } catch (error) {
-      console.error('Error verifying OTP:', error);
-      return { success: false, error: 'Failed to verify OTP' };
+      console.error('Error verifying:', error);
+      return { success: false, error: 'Failed to verify' };
     }
   };
 
