@@ -247,10 +247,13 @@ export const usePWAInstall = (): UsePWAInstallReturn => {
           console.error('   - pwa-512x512.png (512x512 pixels)');
           console.error('   You can use: frontend/public/icon-generator.html to create them');
         } else {
-          console.log('💡 IMPORTANT: If beforeinstallprompt didn\'t fire, you can still install:');
-          console.log('   1. Look for the install icon (⊕) in Chrome\'s address bar');
-          console.log('   2. Or go to Chrome menu (⋮) > "Install StablePay"');
-          console.log('   3. The app is installable even if the event didn\'t fire!');
+        console.log('💡 IMPORTANT: If beforeinstallprompt didn\'t fire, you can still install:');
+        console.log('   1. Look for the install icon (⊕) in Chrome\'s address bar');
+        console.log('   2. Or go to Chrome menu (⋮) > "Install StablePay"');
+        console.log('   3. The app is installable even if the event didn\'t fire!');
+        
+        // Show user-friendly instructions via existing function
+        showManualInstallInstructions();
         }
         
         return false;
