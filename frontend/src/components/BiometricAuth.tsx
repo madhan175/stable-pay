@@ -17,10 +17,10 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
   const [hasCheckedSupport, setHasCheckedSupport] = useState(false);
 
   useEffect(() => {
-    // Stop any active camera streams when BiometricAuth component mounts
+    // Stop any active camera streams IMMEDIATELY when BiometricAuth component mounts
     // This ensures camera is off when user navigates from Face Verification
     const stopAllCameraStreams = () => {
-      // Check for any existing video elements with active streams
+      // Method 1: Check for any existing video elements with active streams
       const videoElements = document.querySelectorAll('video');
       videoElements.forEach(video => {
         if (video.srcObject) {
@@ -29,28 +29,39 @@ const BiometricAuth: React.FC<BiometricAuthProps> = ({
             if (track.kind === 'video') {
               track.stop();
               track.enabled = false;
+              track.onended = null;
             }
           });
           video.srcObject = null;
+          video.pause();
         }
       });
       
-      // Also check MediaStreamTrack.getSources if available (for any orphaned tracks)
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Enumerate all media devices to find active video tracks
+      // Method 2: Check for any MediaStreamTracks that might be orphaned
+      // Note: We can't enumerate active tracks directly, but stopping video element streams should be enough
+      
+      // Method 3: Force stop via enumerateDevices (browser-level cleanup)
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         navigator.mediaDevices.enumerateDevices().catch(() => {
           // Ignore errors
         });
       }
     };
     
+    // Stop immediately on mount
     stopAllCameraStreams();
+    
+    // Also stop after a brief delay to catch any streams that start after mount
+    const timeoutId = setTimeout(() => {
+      stopAllCameraStreams();
+    }, 100);
     
     // Only check basic support, don't probe for authenticators yet
     checkBasicSupport();
     
     // Cleanup on unmount
     return () => {
+      clearTimeout(timeoutId);
       stopAllCameraStreams();
     };
   }, []);

@@ -78,32 +78,48 @@ class SocketService {
         return null;
       }
       
-      // Convert HTTP to HTTPS for WebSocket (wss://) if needed
-      let wsUrl = serverUrl;
-      if (serverUrl.startsWith('http://')) {
-        wsUrl = serverUrl.replace('http://', 'https://');
-        console.warn('⚠️ [SOCKET] HTTP detected, converting to HTTPS for secure WebSocket connection');
+      // For localhost, keep HTTP (Socket.IO will use ws:// automatically)
+      // For production, use HTTPS for secure WebSocket (wss://)
+      let socketUrl = serverUrl;
+      const isLocalhost = serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1');
+      
+      if (serverUrl.startsWith('http://') && !isLocalhost) {
+        // Only convert to HTTPS for non-localhost URLs (production)
+        socketUrl = serverUrl.replace('http://', 'https://');
+        console.log('🔒 [SOCKET] Production URL detected, using HTTPS for secure WebSocket');
+      } else if (isLocalhost && serverUrl.startsWith('https://')) {
+        // If somehow localhost has https://, convert back to http://
+        socketUrl = serverUrl.replace('https://', 'http://');
+        console.log('🔓 [SOCKET] Localhost detected, using HTTP (Socket.IO will use ws://)');
       }
       
       // Log the URL being used (helps with debugging)
-      console.log('🔌 [SOCKET] Connecting to:', wsUrl);
+      console.log('🔌 [SOCKET] Connecting to:', socketUrl);
       console.log('🔌 [SOCKET] Environment variable:', envApiUrl || 'NOT SET (using default localhost:5000)');
       console.log('🔌 [SOCKET] Mode:', import.meta.env.PROD ? 'PRODUCTION' : 'DEVELOPMENT');
       
-      // Use the WebSocket-ready URL (with https:// if needed)
-      const socketUrl = wsUrl.startsWith('https://') ? wsUrl : serverUrl;
+      // Detect if we're on Render free tier (onrender.com domain)
+      // Render free tier has issues with WebSocket - use polling first
+      const isRenderFreeTier = socketUrl.includes('onrender.com');
+      
+      if (isRenderFreeTier) {
+        console.log('🔧 [SOCKET] Detected Render deployment - using polling-first mode for reliability');
+        console.log('💡 [SOCKET] Tip: Upgrade to Render Starter ($7/mo) for always-on service with WebSocket');
+      }
       
       this.socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
+        // On Render free tier, prefer polling first (more reliable with spin-downs)
+        // Otherwise, try websocket first for better performance
+        transports: isRenderFreeTier ? ['polling', 'websocket'] : ['websocket', 'polling'],
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        timeout: 20000,
-        // Force upgrade to secure WebSocket for HTTPS
-        upgrade: true,
-        rememberUpgrade: true,
-        // Auto-detect secure WebSocket based on URL protocol
-        secure: socketUrl.startsWith('https://'),
+        reconnectionDelay: isRenderFreeTier ? 2000 : 1000, // Longer delay for Render free tier
+        reconnectionAttempts: isRenderFreeTier ? 10 : 5, // More attempts for Render free tier
+        timeout: 30000, // Longer timeout for Render spin-up
+        // On Render free tier, don't upgrade to WebSocket immediately
+        upgrade: !isRenderFreeTier, // Disable upgrade on Render free tier
+        rememberUpgrade: !isRenderFreeTier,
+        // Auto-detect secure WebSocket: only use secure for HTTPS (production), not for localhost
+        secure: socketUrl.startsWith('https://') && !isLocalhost,
       });
 
       // Add error handlers to prevent unhandled promise rejections

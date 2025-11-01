@@ -17,7 +17,7 @@ const KYC = () => {
   const handleKYCComplete = () => {
     setCurrentStep('complete');
     setTimeout(() => {
-      navigate('/send');
+      navigate('/home');
     }, 3000);
   };
 

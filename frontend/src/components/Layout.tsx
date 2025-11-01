@@ -4,12 +4,10 @@ import { useState } from 'react';
 import WalletConnect from './WalletConnect';
 import PhoneWalletNav from './PhoneWalletNav';
 import PWAInstallPrompt from './PWAInstallPrompt';
-import { useAuth } from '../context/AuthContext';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 const Layout = () => {
   const location = useLocation();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { canInstall, installApp } = usePWAInstall();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -17,13 +15,8 @@ const Layout = () => {
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setMobileMenuOpen(false);
-    // If user is logged in and verified, go to send page
-    if (user && user.phone_verified && user.kyc_status === 'verified') {
-      navigate('/send');
-    } else {
-      // Otherwise go to home page instead of onboarding
-      navigate('/home');
-    }
+    // Always go to home page after login
+    navigate('/home');
   };
   
   return (
@@ -33,7 +26,7 @@ const Layout = () => {
           <div className="flex justify-between items-center h-16 md:h-18">
             {/* Logo */}
             <Link 
-              to={user && user.phone_verified && user.kyc_status === 'verified' ? "/send" : "/home"} 
+              to="/home"
               onClick={handleLogoClick} 
               className="flex items-center space-x-2.5 group flex-shrink-0"
             >

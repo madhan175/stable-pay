@@ -198,21 +198,71 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       // Get user from localStorage
       const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        if (user.id && walletAddress) {
-          try {
-            await userAPI.linkWallet(user.id, walletAddress);
-            console.log('✅ [WALLET] Linked wallet address to user');
-          } catch (linkError) {
-            // Silently fail - not critical if linking fails
-            console.warn('⚠️ [WALLET] Could not link wallet to user:', linkError);
-          }
-        }
+      if (!savedUser) {
+        console.log('ℹ️ [WALLET] No user logged in, skipping wallet link');
+        return;
       }
-    } catch (error) {
+
+      const user = JSON.parse(savedUser);
+      if (!user?.id) {
+        console.warn('⚠️ [WALLET] User ID not found in localStorage');
+        return;
+      }
+
+      if (!walletAddress) {
+        console.warn('⚠️ [WALLET] Wallet address is empty');
+        return;
+      }
+
+      try {
+        // Pass phone number if available (helps resolve mock users to real users)
+        const phone = user.phone || null;
+        const response = await userAPI.linkWallet(user.id, walletAddress, phone);
+        
+        if (response.data?.success) {
+          console.log('✅ [WALLET] Linked wallet address to user:', walletAddress.substring(0, 10) + '...');
+        } else if (response.data?.skipped) {
+          // Wallet linking was skipped (mock user) - that's okay
+          console.log('ℹ️ [WALLET] Wallet linking skipped:', response.data.message);
+        } else {
+          console.warn('⚠️ [WALLET] Wallet link returned unsuccessful:', response.data);
+        }
+      } catch (linkError: any) {
+        // Check error type and log appropriately
+        const errorResponse = linkError?.response?.data;
+        const errorMessage = errorResponse?.message || errorResponse?.error || linkError?.message;
+        
+        // If user not found or skipped (mock user), that's okay
+        if (linkError?.response?.status === 404 || 
+            errorMessage?.includes('not found') ||
+            linkError?.response?.data?.skipped) {
+          console.log('ℹ️ [WALLET] Wallet linking skipped or user not found:', errorMessage || linkError?.response?.data?.message);
+          return;
+        }
+        
+        // If it's a validation error, log it but don't show to user
+        if (linkError?.response?.status === 400) {
+          console.warn('⚠️ [WALLET] Validation error:', errorMessage);
+          return;
+        }
+        
+        // If it's a UUID format error (mock user), log info message
+        if (errorMessage?.includes('invalid input syntax for type uuid') || 
+            errorMessage?.includes('UUID')) {
+          console.log('ℹ️ [WALLET] Mock user detected - complete phone verification to link wallet');
+          return;
+        }
+        
+        // For other errors, log but don't block wallet connection
+        console.warn('⚠️ [WALLET] Could not link wallet to user:', {
+          status: linkError?.response?.status,
+          message: errorMessage,
+          details: errorResponse?.details
+        });
+      }
+    } catch (error: any) {
       // Silently fail - not critical
-      console.warn('⚠️ [WALLET] Error linking wallet:', error);
+      console.warn('⚠️ [WALLET] Error in linkWalletToUser:', error?.message || error);
     }
   };
 

@@ -18,18 +18,23 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({ onComplete }) => {
       // Cleanup: Stop camera when component unmounts
       stopCamera();
       
-      // Force stop all media tracks
+      // Force stop all media tracks immediately
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => {
           track.stop();
           track.enabled = false;
+          track.onended = null;
         });
         streamRef.current = null;
       }
       
       if (videoRef.current) {
         videoRef.current.srcObject = null;
+        videoRef.current.pause();
       }
+      
+      // Force enumerate and stop any lingering tracks (but don't request new ones)
+      // The browser will handle cleanup of any orphaned tracks
     };
   }, []);
 
@@ -69,24 +74,32 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({ onComplete }) => {
   const handleVerify = () => {
     // Simulate face verification
     setIsVerified(true);
-    // Stop camera immediately when verification starts
+    
+    // Stop camera IMMEDIATELY when verification completes
     stopCamera();
     
-    // Ensure all camera tracks are stopped
+    // Force stop all camera tracks immediately
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
         track.enabled = false;
+        track.onended = null; // Clear any event listeners
       });
       streamRef.current = null;
     }
     
-    // Clear video element
+    // Clear video element immediately
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.pause(); // Also pause the video element
     }
     
+    // Note: We don't request new streams here - that would start the camera again
+    // The cleanup above should handle stopping all active streams
+    
     setTimeout(() => {
+      // Final cleanup before callback
+      stopCamera();
       if (onComplete) {
         onComplete();
       }
@@ -134,7 +147,7 @@ const FaceVerification: React.FC<FaceVerificationProps> = ({ onComplete }) => {
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${isVerified ? 'hidden' : ''}`}
           style={{ transform: 'scaleX(-1)' }} // Mirror effect
         />
       </div>

@@ -3,335 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StablePay - Connection Test</title>
+    <title>Render & Vercel Connection Tester</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
             padding: 20px;
+            background: #f5f5f5;
         }
-        
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
+            border-bottom: 3px solid #0070f3;
+            padding-bottom: 10px;
         }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
         }
-        
-        .input-group {
-            margin-bottom: 20px;
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px 0;
         }
-        
-        label {
-            display: block;
-            color: #333;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
         button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0070f3;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
+            font-size: 16px;
+            margin: 10px 0;
         }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .results {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
+        button:hover { background: #0051cc; }
+        #results { margin-top: 20px; }
         .result-item {
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            line-height: 1.6;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #0070f3;
         }
-        
-        .result-item.success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-        
-        .result-item.error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .result-item.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
-        }
-        
-        .result-item.pending {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid #ffc107;
-        }
-        
-        .status-icon {
-            display: inline-block;
-            margin-right: 8px;
-            font-weight: bold;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid #fff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            margin-right: 8px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        pre {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-x: auto;
-            font-size: 12px;
-            margin-top: 8px;
+        .result-item.error { border-left-color: #dc3545; }
+        .result-item.success { border-left-color: #28a745; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Connection Test</h1>
-        <p class="subtitle">Verify Backend (Render) ↔ Frontend (Vercel) Connection</p>
+        <h1>🔍 Render & Vercel Connection Tester</h1>
+        <p>This tool tests the connection between your backend (Render) and frontend (Vercel).</p>
         
-        <div class="input-group">
-            <label for="backendUrl">Backend URL (Render):</label>
-            <input 
-                type="text" 
-                id="backendUrl" 
-                placeholder="https://stablepay-backend.onrender.com"
-                value=""
-            >
+        <div class="test-section">
+            <h2>Configuration</h2>
+            <div>
+                <label>Backend URL:</label><br>
+                <input type="text" id="backendUrl" value="https://stable-pay-mkkj.onrender.com" style="width: 100%; padding: 8px; margin: 5px 0;">
+            </div>
+            <div style="margin-top: 10px;">
+                <label>Frontend URL (for CORS check):</label><br>
+                <input type="text" id="frontendUrl" value="https://stable-pay-21.vercel.app" style="width: 100%; padding: 8px; margin: 5px 0;">
+            </div>
         </div>
-        
-        <div class="input-group">
-            <label for="frontendUrl">Frontend URL (Vercel):</label>
-            <input 
-                type="text" 
-                id="frontendUrl" 
-                placeholder="https://your-project.vercel.app"
-                value=""
-            >
-        </div>
-        
-        <button id="testBtn" onclick="runTests()">Run All Tests</button>
-        
-        <div class="results" id="results"></div>
+
+        <button onclick="runTests()">▶️ Run All Tests</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+
+        <div id="results"></div>
     </div>
-    
+
     <script>
-        function addResult(message, type = 'info', data = null) {
-            const results = document.getElementById('results');
-            const item = document.createElement('div');
-            item.className = `result-item ${type}`;
-            
-            let icon = 'ℹ️';
-            if (type === 'success') icon = '✅';
-            if (type === 'error') icon = '❌';
-            if (type === 'pending') icon = '⏳';
-            
-            let content = `<span class="status-icon">${icon}</span>${message}`;
-            
-            if (data) {
-                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-            }
-            
-            item.innerHTML = content;
-            results.appendChild(item);
-            results.scrollTop = results.scrollHeight;
+        const results = [];
+
+        function addResult(icon, title, message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            results.push({ icon, title, message, type, timestamp });
+            renderResults();
         }
-        
+
+        function renderResults() {
+            const container = document.getElementById('results');
+            container.innerHTML = '<h2>Test Results</h2>';
+            
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `result-item ${result.type}`;
+                div.innerHTML = `
+                    <strong>${result.icon} ${result.title}</strong> 
+                    <span style="float:right; color: #666;">${result.timestamp}</span>
+                    <p>${result.message}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
         function clearResults() {
-            document.getElementById('results').innerHTML = '';
+            results.length = 0;
+            renderResults();
         }
-        
+
         async function runTests() {
+            clearResults();
+            addResult('🔬', 'Starting Tests', 'Running comprehensive connection tests...', 'info');
+            
             const backendUrl = document.getElementById('backendUrl').value.trim();
             const frontendUrl = document.getElementById('frontendUrl').value.trim();
-            const btn = document.getElementById('testBtn');
-            
-            if (!backendUrl || !frontendUrl) {
-                alert('Please enter both backend and frontend URLs');
-                return;
-            }
-            
-            // Remove trailing slashes
-            const backend = backendUrl.replace(/\/+$/, '');
-            const frontend = frontendUrl.replace(/\/+$/, '');
-            
-            btn.disabled = true;
-            clearResults();
-            
-            addResult('Starting verification tests...', 'info');
-            
-            // Test 1: Backend Health
-            addResult('Test 1: Checking backend health endpoint...', 'pending');
+
+            // Test 1: Backend Reachability
+            addResult('1️⃣', 'Backend Reachability', 'Testing if backend is accessible...', 'info');
             try {
-                const healthResponse = await fetch(`${backend}/health`);
-                const healthData = await healthResponse.json();
+                const startTime = Date.now();
+                const response = await fetch(`${backendUrl}/health`);
+                const duration = Date.now() - startTime;
+                const data = await response.json();
                 
-                if (healthResponse.ok && healthData.status === 'OK') {
-                    addResult('✅ Backend is running and healthy!', 'success', healthData);
+                if (response.ok && data.status) {
+                    addResult('✅', 'Backend Reachable', 
+                        `Success! Backend responded in ${duration}ms. Status: ${data.status}`, 
+                        'success');
                 } else {
-                    addResult('❌ Backend health check failed', 'error', healthData);
+                    addResult('⚠️', 'Backend Response', 
+                        `Backend returned status ${response.status}`, 
+                        'warning');
                 }
             } catch (error) {
-                addResult('❌ Cannot reach backend - check URL and ensure backend is running', 'error', { error: error.message });
+                addResult('❌', 'Backend Unreachable', 
+                    `Failed to connect: ${error.message}. Is your backend deployed?`, 
+                    'error');
             }
-            
-            // Test 2: CORS Check
-            addResult('Test 2: Checking CORS configuration...', 'pending');
+
+            // Test 2: CORS Configuration
+            addResult('2️⃣', 'CORS Configuration', 'Testing CORS settings...', 'info');
             try {
-                const corsResponse = await fetch(`${backend}/health`, {
-                    method: 'GET',
+                const response = await fetch(`${backendUrl}/health`, {
                     headers: {
-                        'Origin': frontend
+                        'Origin': frontendUrl
                     }
                 });
                 
-                if (corsResponse.ok) {
-                    const corsHeaders = {
-                        'Access-Control-Allow-Origin': corsResponse.headers.get('Access-Control-Allow-Origin'),
-                        'Access-Control-Allow-Credentials': corsResponse.headers.get('Access-Control-Allow-Credentials')
-                    };
-                    addResult('✅ CORS is properly configured!', 'success', corsHeaders);
+                if (response.ok) {
+                    const corsHeader = response.headers.get('access-control-allow-origin');
+                    if (corsHeader) {
+                        addResult('✅', 'CORS Working', 
+                            `CORS is configured. Allowed origin: ${corsHeader}`, 
+                            'success');
+                    } else {
+                        addResult('⚠️', 'CORS Header Missing', 
+                            'Backend responded but no CORS header found', 
+                            'warning');
+                    }
                 } else {
-                    addResult('❌ CORS check failed - status: ' + corsResponse.status, 'error');
+                    addResult('❌', 'CORS Failed', 
+                        `Backend returned ${response.status}`, 
+                        'error');
                 }
             } catch (error) {
                 if (error.message.includes('CORS')) {
-                    addResult('❌ CORS error - backend ALLOWED_ORIGINS needs to include frontend URL', 'error', { 
-                        error: error.message,
-                        fix: `Update ALLOWED_ORIGINS in Render: ${frontend}`
-                    });
+                    addResult('❌', 'CORS Error', 
+                        `CORS is blocking requests. Add ${frontendUrl} to ALLOWED_ORIGINS in Render`, 
+                        'error');
                 } else {
-                    addResult('❌ CORS check failed', 'error', { error: error.message });
+                    addResult('❌', 'CORS Test Failed', 
+                        error.message, 
+                        'error');
                 }
             }
-            
-            // Test 3: API Endpoint
-            addResult('Test 3: Testing API endpoint (OTP send)...', 'pending');
+
+            // Test 3: Environment Variable Check
+            addResult('3️⃣', 'Frontend Environment', 'Checking frontend configuration...', 'info');
+            // Can't check this from a static HTML file, but provide guidance
+            addResult('ℹ️', 'Frontend Config Check', 
+                'Please verify VITE_API_URL is set in Vercel: Settings → Environment Variables → Should be: <code>' + 
+                backendUrl + '</code>', 
+                'info');
+
+            // Test 4: Response Time
+            addResult('4️⃣', 'Response Time', 'Measuring backend response time...', 'info');
             try {
-                const apiResponse = await fetch(`${backend}/auth/send-otp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Origin': frontend
-                    },
-                    body: JSON.stringify({ phone: '+1234567890' })
-                });
+                const times = [];
+                for (let i = 0; i < 3; i++) {
+                    const start = Date.now();
+                    await fetch(`${backendUrl}/health`);
+                    times.push(Date.now() - start);
+                }
+                const avgTime = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(0);
                 
-                const apiData = await apiResponse.json();
-                
-                if (apiResponse.ok) {
-                    addResult('✅ API endpoint is working!', 'success', apiData);
+                if (avgTime > 10000) {
+                    addResult('⚠️', 'Slow Response', 
+                        `Average response time: ${avgTime}ms (slow). Backend may be on free tier spinning up`, 
+                        'warning');
                 } else {
-                    addResult('⚠️ API endpoint responded but with error', 'error', apiData);
+                    addResult('✅', 'Good Response Time', 
+                        `Average response time: ${avgTime}ms`, 
+                        'success');
                 }
             } catch (error) {
-                addResult('❌ API endpoint test failed', 'error', { error: error.message });
+                addResult('❌', 'Response Time Failed', 
+                    error.message, 
+                    'error');
             }
-            
-            // Test 4: Frontend Environment Check
-            addResult('Test 4: Checking frontend configuration...', 'info');
-            addResult('Note: Open your Vercel frontend and check browser console for VITE_API_URL', 'info');
-            addResult(`Expected: VITE_API_URL should equal: ${backend}`, 'info');
-            
+
+            // Test 5: WebSocket (can't test from static HTML, but provide guidance)
+            addResult('5️⃣', 'WebSocket Check', 'Instructions for WebSocket test...', 'info');
+            addResult('ℹ️', 'WebSocket Test', 
+                'Go to your Vercel app, open browser console (F12), and check for:<br>' +
+                '<code>🔗 [SOCKET] Connected to KYC socket server</code>', 
+                'info');
+
             // Summary
+            const successCount = results.filter(r => r.type === 'success').length;
+            const errorCount = results.filter(r => r.type === 'error').length;
+            const totalTests = results.filter(r => r.type !== 'info').length;
+            
+            addResult('📊', 'Summary', 
+                `${successCount}/${totalTests} tests passed. ` +
+                `${errorCount} errors found.`, 
+                errorCount > 0 ? 'error' : (successCount === totalTests ? 'success' : 'warning'));
+
+            // Recommendations
+            if (errorCount > 0) {
+                addResult('💡', 'Recommendations', 
+                    '1. Check Render dashboard: Is service "Live"?<br>' +
+                    '2. Check Render logs: Any errors?<br>' +
+                    '3. Verify ALLOWED_ORIGINS in Render includes: ' + frontendUrl + '<br>' +
+                    '4. Restart Render service if needed', 
+                    'info');
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
             setTimeout(() => {
-                addResult('--- Test Summary ---', 'info');
-                addResult('Check results above. All green ✅ means connection is working!', 'info');
-                addResult('If you see ❌ errors, check the troubleshooting section in VERIFY-DEPLOYMENT.md', 'info');
-                btn.disabled = false;
-            }, 500);
-        }
-        
-        // Auto-fill frontend URL
-        if (window.location.hostname && !window.location.hostname.includes('localhost')) {
-            document.getElementById('frontendUrl').value = window.location.origin;
-        }
+                addResult('👋', 'Ready', 'Click "Run All Tests" to start testing', 'info');
+            }, 100);
+        });
     </script>
 </body>
 </html>
-

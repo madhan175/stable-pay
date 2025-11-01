@@ -46,7 +46,7 @@ const Onboarding: React.FC = () => {
   };
 
   const finish = () => {
-    navigate('/send');
+    navigate('/home');
   };
 
   return (
@@ -268,5 +268,4 @@ const Onboarding: React.FC = () => {
 };
 
 export default Onboarding;
-
 
