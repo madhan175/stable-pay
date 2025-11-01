@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Projects\\StablePay2.0\\contarcts\\contracts\\FiatUSDTSwap.sol": {
-      "lastModificationDate": 1761902855925,
-      "contentHash": "cc0c9a89b9a8b798a9fd2643343150f4",
+      "lastModificationDate": 1761972485265,
+      "contentHash": "88f6393f19b887e024eb1a63c3cb0dc1",
       "sourceName": "contracts/FiatUSDTSwap.sol",
       "solcConfig": {
         "version": "0.8.27",

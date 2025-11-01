@@ -63,11 +63,16 @@ contract FiatUSDTSwap is ReentrancyGuard {
         supportedCurrencies["EUR"] = true;
         supportedCurrencies["USD"] = true;
 
-        // Set initial rates (example rates scaled by 1e8)
+        // Set initial rates (scaled by 1e8)
+        // 1 USDT = 1 USD (pegged)
         currencyRates["USDT"] = 1e8;
         currencyRates["USD"] = 1e8;
-        currencyRates["EUR"] = 92e6;
-        currencyRates["INR"] = 88e6; // Example: 1 USDT = 88 INR
+        // 1 EUR = 1.08 USD (example rate)
+        currencyRates["EUR"] = 108e6;
+        // 1 USD = 88.78 INR
+        // So 1 INR = 1/88.78 USD = 0.01126380 USD
+        // Rate stored as: (1 / 88.78) * 1e8 = 1,126,380
+        currencyRates["INR"] = 1126380;
     }
 
     /// @notice Calculate swap amounts with GST
@@ -84,9 +89,10 @@ contract FiatUSDTSwap is ReentrancyGuard {
         uint256 toRate = currencyRates[toCurrency];
 
         // Convert to USDT equivalent first
+        // Rates are stored scaled by 1e8, fromAmount is scaled by 1e18
         uint256 usdtEquivalent = _compareStrings(fromCurrency, "USDT")
             ? fromAmount
-            : (fromAmount * 1e8) / fromRate;
+            : (fromAmount * fromRate) / 1e8;
 
         // Apply GST for INR transactions
         if (_compareStrings(fromCurrency, "INR") || _compareStrings(toCurrency, "INR")) {

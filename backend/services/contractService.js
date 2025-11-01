@@ -11,7 +11,7 @@ const getChecksummedAddress = (address) => {
   }
 };
 
-const RAW_CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4';
+const RAW_CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xeAB6f03ad3C23224d50e15a9F0A2024004d53408';
 const RAW_USDT_ADDRESS = process.env.USDT_ADDRESS || '0x61Ddf50869436D159090bBAC40f0fe7e4Ffcd4cD';
 
 const CONTRACT_ADDRESS = getChecksummedAddress(RAW_CONTRACT_ADDRESS); // From deployment.json

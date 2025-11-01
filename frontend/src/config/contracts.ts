@@ -17,7 +17,7 @@ const getChecksummedAddress = (address: string): string => {
 };
 
 export const CONTRACT_ADDRESSES = {
-  swap: getChecksummedAddress('0xA59CE17F2ea6946F48386B4bD7884512AeC674F4'), // From deployment.json
+  swap: getChecksummedAddress('0xeAB6f03ad3C23224d50e15a9F0A2024004d53408'), // Fixed calculation contract
   usdt: getChecksummedAddress(ENV_USDT_ADDRESS || DEFAULT_USDT_ADDRESS), // Use env variable or default deployed address
 };
 
@@ -137,7 +137,7 @@ export const NETWORK_CONFIG = {
   sepolia: {
     chainId: 11155111,
     name: 'Sepolia Testnet',
-    rpcUrl: 'https://sepolia.infura.io/v3/'
+    rpcUrl: 'https://rpc.sepolia.org'
   }
 };
 
@@ -181,7 +181,7 @@ export const ensureCorrectNetwork = async (): Promise<void> => {
                 symbol: 'ETH',
                 decimals: 18,
               },
-              rpcUrls: ['https://sepolia.infura.io/v3/'],
+              rpcUrls: ['https://rpc.sepolia.org'],
               blockExplorerUrls: ['https://sepolia.etherscan.io/'],
             }],
           });

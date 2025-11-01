@@ -18,6 +18,8 @@ const Send = () => {
   const [inrAmount, setInrAmount] = useState('');
   const [usdtAmount, setUsdtAmount] = useState('');
   const [usdAmount, setUsdAmount] = useState('');
+  const [usdtBeforeGst, setUsdtBeforeGst] = useState('');
+  const [gstAmount, setGstAmount] = useState('');
   const [merchantAddress, setMerchantAddress] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -130,24 +132,35 @@ const Send = () => {
     
     setIsConverting(true);
     try {
-      let usdtValue = 0;
+      let usdtValue = 0;  // After GST
+      let gstValue = 0;
+      let beforeGstValue = 0;  // Before GST
       
       if (contractConnected) {
         // Use contract for conversion
         const result = await frontendContractService.calculateSwap('INR', 'USDT', inrAmount);
-        usdtValue = parseFloat(result.toAmount);
+        usdtValue = parseFloat(result.toAmount);  // After GST
+        gstValue = parseFloat(result.gstAmount);
+        beforeGstValue = usdtValue + gstValue;  // Before GST = after GST + GST
         setUsdtAmount(usdtValue.toFixed(6));
+        setGstAmount(gstValue.toFixed(6));
+        setUsdtBeforeGst(beforeGstValue.toFixed(6));
         console.log('💰 [CONTRACT] Conversion with GST:', {
           fromAmount: inrAmount,
           toAmount: result.toAmount,
           gstAmount: result.gstAmount,
+          beforeGst: beforeGstValue.toFixed(6),
           gstRate: gstRate + '%'
         });
       } else {
         // Fallback to mock conversion
         const converted = await convertINRToUSDT(parseFloat(inrAmount));
-        usdtValue = converted;
-        setUsdtAmount(converted.toFixed(6));
+        beforeGstValue = converted;  // This gives before GST in mock
+        gstValue = converted * 0.18;
+        usdtValue = converted - gstValue;  // After GST
+        setUsdtAmount(usdtValue.toFixed(6));
+        setGstAmount(gstValue.toFixed(6));
+        setUsdtBeforeGst(beforeGstValue.toFixed(6));
       }
       
       // Set USD amount (USDT is pegged to USD)
@@ -264,6 +277,8 @@ const Send = () => {
       return () => clearTimeout(timer);
     } else {
       setUsdtAmount('');
+      setGstAmount('');
+      setUsdtBeforeGst('');
     }
   }, [inrAmount]);
 
@@ -341,6 +356,38 @@ const Send = () => {
                 </div>
                 <div className="text-xs text-green-600 mt-1">
                   USDT is pegged to USD (1:1 ratio)
+                </div>
+              </div>
+            )}
+            
+            {/* GST Fee Display */}
+            {gstAmount && parseFloat(gstAmount) > 0 && usdtBeforeGst && (
+              <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-3 sm:p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-xs font-bold">💰</span>
+                      </div>
+                      <span className="text-xs sm:text-sm font-medium text-orange-800">Conversion Details:</span>
+                    </div>
+                  </div>
+                  <div className="pl-6 space-y-1 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-orange-700">USDT Before GST:</span>
+                      <span className="font-semibold text-orange-900">{parseFloat(usdtBeforeGst).toFixed(6)} USDT</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-orange-700">GST Fee ({gstRate}%):</span>
+                      <span className="font-semibold text-orange-900">-{parseFloat(gstAmount).toFixed(6)} USDT</span>
+                    </div>
+                    <div className="border-t border-orange-200 pt-1 mt-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-orange-900 font-semibold">Final Amount:</span>
+                        <span className="text-orange-900 font-bold text-sm">{parseFloat(usdtAmount).toFixed(6)} USDT</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -1,9 +1,9 @@
 {
-  "contractAddress": "0xA59CE17F2ea6946F48386B4bD7884512AeC674F4",
+  "contractAddress": "0xeAB6f03ad3C23224d50e15a9F0A2024004d53408",
   "usdtAddress": "0x61Ddf50869436D159090bBAC40f0fe7e4Ffcd4cD",
   "admin": "0x5De853eA28F8a851677C3A158DB617ea726b2B7D",
   "network": "sepolia",
   "chainId": "11155111",
-  "blockNumber": 9530527,
-  "timestamp": "2025-10-31T14:09:58.241Z"
+  "blockNumber": 9534915,
+  "timestamp": "2025-11-01T04:49:04.869Z"
 }

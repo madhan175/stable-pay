@@ -1176,7 +1176,7 @@ app.get('/contract/health', async (req, res) => {
     const adminAddress = await contractService.getAdminAddress();
     res.json({ 
       status: 'OK', 
-      contractAddress: '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4',
+      contractAddress: '0xeAB6f03ad3C23224d50e15a9F0A2024004d53408',
       adminAddress,
       timestamp: new Date().toISOString()
     });

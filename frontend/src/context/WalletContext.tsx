@@ -167,7 +167,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 symbol: 'ETH',
                 decimals: 18,
               },
-              rpcUrls: ['https://sepolia.infura.io/v3/'],
+              rpcUrls: ['https://rpc.sepolia.org'],
               blockExplorerUrls: ['https://sepolia.etherscan.io/'],
             }],
           });

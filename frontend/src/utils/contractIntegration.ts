@@ -148,10 +148,10 @@ const ENV_CONTRACT_ADDRESS = (import.meta as any)?.env?.VITE_CONTRACT_ADDRESS ||
 const LS_CONTRACT_ADDRESS = (() => {
   try { return localStorage.getItem('CONTRACT_ADDRESS') || ''; } catch { return ''; }
 })();
-const RAW_CONTRACT_ADDRESS = ENV_CONTRACT_ADDRESS || LS_CONTRACT_ADDRESS || '0xA59CE17F2ea6946F48386B4bD7884512AeC674F4';
+const RAW_CONTRACT_ADDRESS = ENV_CONTRACT_ADDRESS || LS_CONTRACT_ADDRESS || '0xeAB6f03ad3C23224d50e15a9F0A2024004d53408';
 let CONTRACT_ADDRESS: string = '';
 try {
-  CONTRACT_ADDRESS = RAW_CONTRACT_ADDRESS ? ethers.getAddress(RAW_CONTRACT_ADDRESS.toLowerCase()) : ethers.getAddress('0xA59CE17F2ea6946F48386B4bD7884512AeC674F4'.toLowerCase());
+  CONTRACT_ADDRESS = RAW_CONTRACT_ADDRESS ? ethers.getAddress(RAW_CONTRACT_ADDRESS.toLowerCase()) : ethers.getAddress('0xeAB6f03ad3C23224d50e15a9F0A2024004d53408'.toLowerCase());
 } catch {
   CONTRACT_ADDRESS = '';
 }
@@ -241,20 +241,20 @@ export class FrontendContractService {
   async calculateSwap(fromCurrency: string, toCurrency: string, fromAmount: string): Promise<SwapCalculation> {
     try {
       const contract = await this.getContract();
-      const fromAmountWei = ethers.parseUnits(fromAmount, 18);
+      const fromAmountRaw = ethers.parseUnits(fromAmount, 18); // Contract expects 18 decimals
       
       console.log('💰 [CONTRACT] Calculating swap:', {
         fromCurrency,
         toCurrency,
         fromAmount,
-        fromAmountWei: fromAmountWei.toString()
+        fromAmountRaw: fromAmountRaw.toString()
       });
       
-      const result = await contract.calculateSwap(fromCurrency, toCurrency, fromAmountWei);
+      const result = await contract.calculateSwap(fromCurrency, toCurrency, fromAmountRaw);
       
       const calculation = {
-        toAmount: ethers.formatUnits(result[0], 18),
-        gstAmount: ethers.formatUnits(result[1], 18)
+        toAmount: ethers.formatUnits(result[0], 18), // Returns USDT in 18 decimals
+        gstAmount: ethers.formatUnits(result[1], 18) // Returns GST in 18 decimals
       };
       
       console.log('✅ [CONTRACT] Swap calculation completed:', calculation);
