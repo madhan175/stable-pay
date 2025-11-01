@@ -326,7 +326,7 @@ const Send = () => {
         )}
 
         {/* USDT Output */}
-        {usdtAmount && (
+        {usdtBeforeGst && (
           <div className="mb-6 sm:mb-8">
             <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
               Equivalent USDT
@@ -335,7 +335,7 @@ const Send = () => {
               <span className="absolute left-3 sm:left-4 top-3.5 sm:top-4 text-gray-500 font-medium text-sm sm:text-base">$</span>
               <input
                 type="text"
-                value={usdtAmount}
+                value={usdtBeforeGst}
                 readOnly
                 className="w-full pl-8 sm:pl-10 pr-12 sm:pr-12 py-3 sm:py-4 text-lg sm:text-xl font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
               />
@@ -345,14 +345,14 @@ const Send = () => {
             </div>
             
             {/* USD Value Display */}
-            {usdAmount && (
+            {usdtBeforeGst && (
               <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4">
                 <div className="flex items-center space-x-2">
                   <DollarSign className="w-4 h-4 text-green-600 flex-shrink-0" />
                   <span className="text-xs sm:text-sm font-medium text-green-800">Current USD Value:</span>
                 </div>
                 <div className="text-base sm:text-lg font-semibold text-green-900 mt-1">
-                  ${usdAmount} USD
+                  ${parseFloat(usdtBeforeGst).toFixed(2)} USD
                 </div>
                 <div className="text-xs text-green-600 mt-1">
                   USDT is pegged to USD (1:1 ratio)
