@@ -22,7 +22,11 @@ const server = http.createServer(app);
 const getAllowedOrigins = () => {
   // Use ALLOWED_ORIGINS if provided (comma-separated)
   if (process.env.ALLOWED_ORIGINS) {
-    return process.env.ALLOWED_ORIGINS.split(',').map(url => url.trim());
+    const origins = process.env.ALLOWED_ORIGINS.split(',').map(url => {
+      // Normalize URLs: remove trailing slashes and ensure proper format
+      return url.trim().replace(/\/$/, '');
+    });
+    return origins;
   }
   
   // Fallback to default origins
@@ -33,7 +37,8 @@ const getAllowedOrigins = () => {
   
   // Add production frontend URLs
   if (process.env.FRONTEND_URL) {
-    origins.push(process.env.FRONTEND_URL);
+    const frontendUrl = process.env.FRONTEND_URL.trim().replace(/\/$/, '');
+    origins.push(frontendUrl);
   }
   
   return origins;
@@ -41,34 +46,92 @@ const getAllowedOrigins = () => {
 
 const allowedOrigins = getAllowedOrigins();
 
+// Log allowed origins for debugging
+console.log('🌐 Configured CORS origins:', allowedOrigins);
+
+// Warn if no production origins configured
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS && !process.env.FRONTEND_URL) {
+  console.warn('⚠️  [CORS] WARNING: No ALLOWED_ORIGINS or FRONTEND_URL set in production!');
+  console.warn('⚠️  [CORS] Only localhost origins are allowed. Set ALLOWED_ORIGINS in Render environment variables.');
+}
+
+// Helper function to normalize and check origin
+const isOriginAllowed = (origin) => {
+  if (!origin) {
+    // Allow requests with no origin (e.g., Postman, server-to-server, same-origin)
+    return true;
+  }
+  
+  // Normalize origin: remove trailing slash and protocol variations
+  const normalizedOrigin = origin.trim().replace(/\/$/, '');
+  
+  // Exact match
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+  
+  // Check with http/https variations
+  const httpVersion = normalizedOrigin.replace(/^https:/, 'http:');
+  const httpsVersion = normalizedOrigin.replace(/^http:/, 'https:');
+  
+  return allowedOrigins.includes(httpVersion) || allowedOrigins.includes(httpsVersion);
+};
+
 const io = socketIo(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      console.log('❌ [Socket.IO CORS] Request rejected from origin:', origin);
+      console.log('   Allowed origins:', allowedOrigins);
       return callback(new Error('Not allowed by CORS'));
     },
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
 // Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // Log origin for debugging in production (helpful for troubleshooting)
+    if (origin && process.env.NODE_ENV === 'production') {
+      console.log('📥 [CORS] Request from origin:', origin);
+    }
+    
+    if (isOriginAllowed(origin)) {
+      if (origin && process.env.NODE_ENV === 'production') {
+        console.log('✅ [CORS] Request allowed');
+      }
+      return callback(null, true);
+    }
+    
+    console.log('❌ [CORS] Request rejected from origin:', origin);
+    console.log('   Allowed origins:', allowedOrigins);
+    console.log('   💡 TIP: Add this origin to ALLOWED_ORIGINS environment variable in Render');
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 // Explicitly handle preflight
 app.options('*', cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    console.log('📡 [CORS] Preflight request from origin:', origin || 'no origin');
+    if (isOriginAllowed(origin)) {
+      console.log('✅ [CORS] Preflight allowed');
+      return callback(null, true);
+    }
+    console.log('❌ [CORS] Preflight rejected');
+    console.log('   Allowed origins:', allowedOrigins);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -608,55 +671,229 @@ app.post('/kyc/verify', async (req, res) => {
 // Link wallet address to user
 app.post('/user/link-wallet', async (req, res) => {
   try {
-    const { userId, walletAddress } = req.body;
+    const { userId, walletAddress, phone } = req.body;
     
-    console.log('🔗 [WALLET] Link wallet request:', { userId: userId?.substring(0, 8) + '...', walletAddress: walletAddress?.substring(0, 10) + '...' });
+    console.log('🔗 [WALLET] Link wallet request:', { 
+      userId: userId?.substring(0, 8) + '...', 
+      walletAddress: walletAddress?.substring(0, 10) + '...',
+      hasUserId: !!userId,
+      hasWalletAddress: !!walletAddress,
+      isMockUser: userId?.startsWith('mock_') || userId?.startsWith('demo-user-')
+    });
     
+    // Validate required fields
     if (!userId || !walletAddress) {
       console.warn('⚠️ [WALLET] Missing required fields');
-      return res.status(400).json({ error: 'User ID and wallet address are required' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'User ID and wallet address are required',
+        details: { hasUserId: !!userId, hasWalletAddress: !!walletAddress }
+      });
     }
 
     // Validate wallet address format (basic check)
-    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+    const walletPattern = /^0x[a-fA-F0-9]{40}$/;
+    if (!walletPattern.test(walletAddress)) {
       console.warn('⚠️ [WALLET] Invalid wallet address format:', walletAddress);
-      return res.status(400).json({ error: 'Invalid wallet address format' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid wallet address format. Must be a valid Ethereum address (0x followed by 40 hex characters)'
+      });
+    }
+
+    // Validate userId format
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      console.warn('⚠️ [WALLET] Invalid userId format');
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid user ID format'
+      });
+    }
+
+    let trimmedUserId = userId.trim();
+    const normalizedWallet = walletAddress.toLowerCase();
+    
+    // Check if userId is a mock/demo user ID (not a valid UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isMockUser = trimmedUserId.startsWith('mock_') || 
+                       trimmedUserId.startsWith('demo-user-') || 
+                       !uuidRegex.test(trimmedUserId);
+    
+    if (isMockUser) {
+      console.log('ℹ️ [WALLET] Mock user detected, attempting to resolve to real user...');
+      
+      // Try to resolve mock user to real user by phone number
+      let realUserId = trimmedUserId;
+      
+      if (phone) {
+        try {
+          realUserId = await resolveUserId(trimmedUserId, phone);
+          if (realUserId !== trimmedUserId && uuidRegex.test(realUserId)) {
+            console.log(`✅ [WALLET] Resolved mock user to real user: ${trimmedUserId.substring(0, 8)} -> ${realUserId.substring(0, 8)}`);
+            trimmedUserId = realUserId;
+          } else {
+            // User doesn't exist, try to create one if we have phone
+            console.log('ℹ️ [WALLET] User not found, creating new user...');
+            try {
+              const newUser = await getOrCreateUserByPhone(phone);
+              realUserId = newUser.id;
+              trimmedUserId = realUserId;
+              console.log(`✅ [WALLET] Created new user for wallet linking: ${realUserId.substring(0, 8)}`);
+            } catch (createError) {
+              console.warn('⚠️ [WALLET] Could not create user:', createError.message);
+              // Continue - will skip wallet linking below
+            }
+          }
+        } catch (resolveError) {
+          console.warn('⚠️ [WALLET] Could not resolve mock user:', resolveError.message);
+        }
+      }
+      
+      // If still not a valid UUID, skip wallet linking (mock users don't need it)
+      if (!uuidRegex.test(trimmedUserId)) {
+        console.log('ℹ️ [WALLET] Skipping wallet link for mock user (no phone provided or user creation failed)');
+        return res.json({ 
+          success: false,
+          skipped: true,
+          message: 'Wallet linking skipped for demo/mock user. Complete phone verification to link wallet.',
+          userId: trimmedUserId
+        });
+      }
     }
 
     try {
-      // Validate userId format (should be UUID or valid string)
-      if (typeof userId !== 'string' || userId.trim().length === 0) {
-        console.warn('⚠️ [WALLET] Invalid userId format');
-        return res.status(400).json({ error: 'Invalid user ID format' });
+      // Check if Supabase is configured
+      if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.warn('⚠️ [WALLET] Supabase not configured, skipping wallet link');
+        return res.json({ 
+          success: false,
+          error: 'Database not configured',
+          message: 'Wallet linking requires database configuration'
+        });
       }
 
-      const updatedUser = await supabaseService.updateUser(userId.trim(), {
-        wallet_address: walletAddress.toLowerCase(),
-        updated_at: new Date().toISOString()
-      });
-      
-      console.log('✅ [WALLET] Linked wallet address to user:', userId.substring(0, 8) + '...');
-      res.json({ success: true, user: updatedUser });
-    } catch (updateError) {
-      console.error('❌ [WALLET] Failed to link wallet:', updateError);
-      console.error('❌ [WALLET] Error details:', {
-        message: updateError?.message,
-        code: updateError?.code,
-        details: updateError?.details
-      });
-      
-      // Provide more specific error message
-      const errorMessage = updateError?.message || 'Failed to link wallet address';
-      res.status(500).json({ 
-        error: 'Failed to link wallet address',
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      // Check if user exists first (only if it's a valid UUID)
+      let userExists = true;
+      if (uuidRegex.test(trimmedUserId)) {
+        try {
+          const { data: existingUser } = await supabaseService.supabase
+            .from('users')
+            .select('id')
+            .eq('id', trimmedUserId)
+            .maybeSingle();
+          
+          if (!existingUser) {
+            userExists = false;
+            console.warn('⚠️ [WALLET] User not found in database:', trimmedUserId.substring(0, 8) + '...');
+          }
+        } catch (checkError) {
+          // If it's a UUID format error, we already handled it above
+          if (checkError?.code === '22P02' || checkError?.message?.includes('invalid input syntax for type uuid')) {
+            console.log('ℹ️ [WALLET] UUID format error in existence check - already handled');
+            return res.json({ 
+              success: false,
+              skipped: true,
+              message: 'Wallet linking requires a verified user account. Please complete phone verification first.',
+              userId: trimmedUserId
+            });
+          }
+          console.warn('⚠️ [WALLET] Could not check if user exists:', checkError.message);
+        }
+      } else {
+        // Not a valid UUID - this should have been handled above, but double-check
+        console.log('ℹ️ [WALLET] User ID is not a valid UUID - skipping wallet link');
+        return res.json({ 
+          success: false,
+          skipped: true,
+          message: 'Wallet linking requires a verified user account. Please complete phone verification first.',
+          userId: trimmedUserId
+        });
+      }
+
+      // Try to update user
+      let updatedUser;
+      try {
+        updatedUser = await supabaseService.updateUser(trimmedUserId, {
+          wallet_address: normalizedWallet,
+          updated_at: new Date().toISOString()
+        });
+        
+        console.log('✅ [WALLET] Linked wallet address to user:', trimmedUserId.substring(0, 8) + '...');
+        return res.json({ 
+          success: true, 
+          user: updatedUser,
+          message: 'Wallet linked successfully'
+        });
+      } catch (updateError) {
+        console.error('❌ [WALLET] Failed to update user:', updateError);
+        console.error('❌ [WALLET] Error details:', {
+          message: updateError?.message,
+          code: updateError?.code,
+          details: updateError?.details,
+          hint: updateError?.hint
+        });
+        
+        // Check if it's a "not found" error
+        if (updateError?.code === 'PGRST116' || updateError?.message?.includes('not found') || !userExists) {
+          return res.status(404).json({ 
+            success: false,
+            error: 'User not found',
+            message: 'Cannot link wallet - user does not exist in database'
+          });
+        }
+        
+        // Check if it's a UUID format error (mock user ID)
+        if (updateError?.code === '22P02' || 
+            updateError?.message?.includes('invalid input syntax for type uuid') ||
+            updateError?.message?.includes('UUID')) {
+          console.log('ℹ️ [WALLET] UUID format error - user ID is not a valid UUID (likely mock user)');
+          return res.json({ 
+            success: false,
+            skipped: true,
+            message: 'Wallet linking requires a verified user account. Please complete phone verification first.',
+            userId: trimmedUserId
+          });
+        }
+        
+        // Check if it's a database schema issue (column doesn't exist)
+        if (updateError?.message?.includes('column') || updateError?.message?.includes('does not exist')) {
+          console.error('❌ [WALLET] Database schema issue - wallet_address column might not exist');
+          return res.status(500).json({ 
+            success: false,
+            error: 'Database configuration error',
+            message: 'Wallet address column not found. Please check database schema.',
+            details: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+          });
+        }
+        
+        // Generic error
+        return res.status(500).json({ 
+          success: false,
+          error: 'Failed to link wallet address',
+          message: updateError?.message || 'Database update failed',
+          details: process.env.NODE_ENV === 'development' ? {
+            code: updateError?.code,
+            details: updateError?.details,
+            hint: updateError?.hint
+          } : undefined
+        });
+      }
+    } catch (serviceError) {
+      console.error('❌ [WALLET] Service error:', serviceError);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Internal server error',
+        message: serviceError?.message || 'Failed to process wallet linking',
+        details: process.env.NODE_ENV === 'development' ? serviceError.message : undefined
       });
     }
   } catch (error) {
-    console.error('❌ [WALLET] Link wallet error:', error);
-    res.status(500).json({ 
-      error: 'Failed to link wallet',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    console.error('❌ [WALLET] Unexpected error:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error?.message || 'Failed to link wallet',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

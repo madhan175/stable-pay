@@ -10,7 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dev-dist
 *.local
+.env.production
 
 # Editor directories and files
 .vscode/*
@@ -30,3 +32,7 @@ dist-ssr
 service-account-key.json
 # OAuth client secrets (different from service account keys)
 client_secret_*.json
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep

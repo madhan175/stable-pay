@@ -2,10 +2,21 @@ const { createClient } = require('@supabase/supabase-js');
 
 class SupabaseService {
   constructor() {
-    this.supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('⚠️ [SUPABASE] Supabase credentials not configured');
+      this.supabase = null;
+    } else {
+      try {
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+        console.log('✅ [SUPABASE] Supabase client initialized');
+      } catch (error) {
+        console.error('❌ [SUPABASE] Failed to initialize Supabase client:', error);
+        this.supabase = null;
+      }
+    }
   }
 
   // User operations
@@ -32,6 +43,10 @@ class SupabaseService {
   }
 
   async updateUser(userId, updates) {
+    if (!this.supabase) {
+      throw new Error('Supabase client not initialized. Please configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+    }
+    
     const { data, error } = await this.supabase
       .from('users')
       .update(updates)
@@ -39,7 +54,18 @@ class SupabaseService {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      // Log the error for debugging
+      console.error('❌ [SUPABASE] updateUser error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        userId: userId?.substring(0, 8) + '...'
+      });
+      throw error;
+    }
+    
     return data;
   }
 

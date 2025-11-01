@@ -59,9 +59,21 @@ Click on **"Environment"** tab and add these variables:
 PORT=5000
 NODE_ENV=production
 
-# Frontend URL (for CORS)
+# Frontend URL (for CORS) - Add your production frontend URL
+# NOTE: ALLOWED_ORIGINS (below) takes precedence over FRONTEND_URL
 FRONTEND_URL=https://your-frontend.vercel.app
-# OR if using Vercel: https://your-app.vercel.app
+
+# ALLOWED_ORIGINS (for CORS) - ⚠️ REQUIRED FOR PRODUCTION ⚠️
+# Comma-separated list of allowed origins
+# If set, this will override FRONTEND_URL and any default origins
+# CRITICAL: Set this to your exact frontend URL(s) - no trailing slashes!
+# Example for single origin:
+# ALLOWED_ORIGINS=https://your-app.vercel.app
+# Example for multiple origins (production + preview):
+# ALLOWED_ORIGINS=https://your-app.vercel.app,https://your-app-git-main-username.vercel.app
+# Example with custom domain:
+# ALLOWED_ORIGINS=https://your-app.vercel.app,https://your-custom-domain.com,https://www.your-custom-domain.com
+ALLOWED_ORIGINS=https://your-frontend.vercel.app
 
 # Supabase (Database)
 SUPABASE_URL=https://your-project.supabase.co
@@ -215,13 +227,62 @@ If you need Redis for OTP storage:
 - Check variable names match exactly (case-sensitive)
 - No quotes needed in Render dashboard
 
-### Issue 4: CORS Errors
+### Issue 4: CORS Errors (MOST COMMON ISSUE)
 
-**Error**: Frontend can't connect
+**Error**: `Not allowed by CORS` or `Access-Control-Allow-Origin header missing`
 **Solution**:
-- Verify `FRONTEND_URL` is set correctly
-- Include full URL: `https://your-app.vercel.app`
-- Check server logs for CORS errors
+1. **CRITICAL: Set ALLOWED_ORIGINS environment variable** in Render:
+   ```env
+   ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://your-custom-domain.com
+   ```
+   - Use comma-separated values for multiple origins
+   - Include **exact** frontend URL (no trailing slash)
+   - Vercel preview URLs change with each deploy!
+   - Include both your main domain AND preview URLs if needed
+
+2. **How to find your frontend URL**:
+   - Go to your Vercel deployment dashboard
+   - Copy the exact URL (including `https://`)
+   - Common formats:
+     - Production: `https://your-app.vercel.app`
+     - Preview: `https://your-app-git-branch-username.vercel.app`
+
+3. **Restart the backend service** after adding the variable:
+   - Go to Render dashboard → Your service → Manual Deploy → Deploy latest commit
+   - OR wait for auto-deploy if auto-deploy is enabled
+
+4. **Check server logs** for CORS debug messages:
+   - Look for: `🌐 Configured CORS origins:` - shows which origins are configured
+   - Look for: `📥 [CORS] Request from origin:` - shows incoming request origin
+   - Look for: `❌ [CORS] Request rejected from origin:` - shows what was rejected
+   - Look for: `💡 TIP: Add this origin to ALLOWED_ORIGINS` - helpful hint
+
+5. **Common mistakes**:
+   - ❌ Using `localhost:5173` instead of production URL
+   - ❌ Adding trailing slash to URL (`https://example.com/` ❌ → `https://example.com` ✅)
+   - ❌ Not including preview URL patterns
+   - ❌ Forgetting to restart service after adding variable
+   - ❌ Typo in the URL (check for `https://` vs `http://`)
+   - ❌ Using wrong environment variable name (must be `ALLOWED_ORIGINS` exactly)
+
+6. **Example for Vercel deployments**:
+   ```env
+   # Single origin
+   ALLOWED_ORIGINS=https://stable-pay.vercel.app
+   
+   # Multiple origins (production + preview)
+   ALLOWED_ORIGINS=https://stable-pay.vercel.app,https://stable-pay-git-main-username.vercel.app
+   
+   # Custom domain
+   ALLOWED_ORIGINS=https://stablepay.com,https://www.stablepay.com
+   ```
+
+7. **Quick Debug Steps**:
+   - Open Render logs
+   - Make a request from your frontend
+   - Look for the rejected origin in logs
+   - Copy that exact origin and add it to `ALLOWED_ORIGINS`
+   - Redeploy
 
 ### Issue 5: Database Connection Fails
 

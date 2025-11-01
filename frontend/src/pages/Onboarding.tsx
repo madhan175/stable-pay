@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, Shield, User, Wallet, Fingerprint, ArrowRight, Camera } from 'lucide-react';
+import { CheckCircle, Shield, User, Wallet, Fingerprint, ArrowRight, Camera, Download } from 'lucide-react';
 import PhoneVerification from '../components/PhoneVerification';
 import KYCUpload from '../components/KYCUpload';
 import FaceVerification from '../components/FaceVerification';
@@ -7,6 +7,7 @@ import BiometricAuth from '../components/BiometricAuth';
 import WalletQRCode from '../components/WalletQRCode';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 type StepKey = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -27,6 +28,7 @@ function QrCodeIcon(props: any) {
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { account, isConnected } = useWallet();
+  const { canInstall, installApp, isIOS, showManualInstructions } = usePWAInstall();
   const [current, setCurrent] = useState<StepKey>(1);
 
   // Redirect logic removed - users can access onboarding page regardless of verification status
@@ -44,7 +46,7 @@ const Onboarding: React.FC = () => {
   };
 
   const finish = () => {
-    navigate('/send');
+    navigate('/home');
   };
 
   return (
@@ -82,8 +84,38 @@ const Onboarding: React.FC = () => {
               <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 rounded-2xl h-48 flex items-center justify-center text-white">
                 <div className="text-xl font-semibold">Welcome to StablePay</div>
               </div>
-              <div className="text-gray-600">We’ll set up your account in a few quick steps.</div>
-              <button onClick={next} className="px-4 py-2 rounded-lg bg-blue-600 text-white">Start</button>
+              <div className="text-gray-600">We'll set up your account in a few quick steps.</div>
+              
+              {/* PWA Install Button */}
+              {canInstall && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Download className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-blue-900">Install StablePay App</span>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    {isIOS 
+                      ? 'Get the app on your iPhone for a better experience'
+                      : 'Download the app for quick access and offline support'}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      const success = await installApp();
+                      if (!success && isIOS) {
+                        showManualInstructions();
+                      }
+                    }}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <Download className="w-5 h-5" />
+                      <span>{isIOS ? 'Show Install Instructions' : 'Install App'}</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+              
+              <button onClick={next} className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors w-full">Start Onboarding</button>
             </div>
           )}
 
@@ -177,11 +209,44 @@ const Onboarding: React.FC = () => {
 
           {current === 7 && (
             <div className="max-w-lg mx-auto space-y-4">
-              <div className="text-gray-800">All set!</div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 mb-2">🎉 All set!</div>
+                <div className="text-gray-600 mb-4">You've completed onboarding successfully.</div>
+              </div>
+              
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm">
-                <div className="font-medium text-green-800 mb-1">You’ve completed onboarding.</div>
+                <div className="font-medium text-green-800 mb-1">✅ Onboarding Complete</div>
                 <div className="text-green-700">You can now proceed to payments and dashboard.</div>
               </div>
+              
+              {/* PWA Install Button on Summary */}
+              {canInstall && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Download className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-blue-900">Install StablePay App</span>
+                  </div>
+                  <p className="text-xs text-blue-700 text-center">
+                    {isIOS 
+                      ? 'Add StablePay to your iPhone home screen for quick access'
+                      : 'Download the app to your device for the best experience'}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      const success = await installApp();
+                      if (!success && isIOS) {
+                        showManualInstructions();
+                      }
+                    }}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <Download className="w-5 h-5" />
+                      <span>{isIOS ? 'Show Install Instructions' : 'Install App Now'}</span>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -203,5 +268,4 @@ const Onboarding: React.FC = () => {
 };
 
 export default Onboarding;
-
 

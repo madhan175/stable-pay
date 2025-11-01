@@ -73,16 +73,34 @@ const Home = () => {
 
   const handleDownloadClick = async () => {
     console.log('Download button clicked', { isIOS, canInstall, hasDeferredPrompt: !!deferredPrompt, isStandalone });
+    
+    // Hide any existing instructions first
+    setShowInstallInstructions(false);
+    setShowIOSInstructions(false);
+    
     if (isIOS) {
-      // For iOS, toggle instructions
-      setShowIOSInstructions(!showIOSInstructions);
+      // For iOS, show instructions (iOS doesn't support programmatic install)
+      setShowIOSInstructions(true);
     } else {
-      // For desktop/mobile browsers, try to install
+      // For desktop/mobile browsers, try to trigger the install prompt
       const success = await installApp();
+      
+      // Only show instructions as a LAST RESORT if:
+      // 1. Installation failed AND
+      // 2. No deferred prompt is available (Chrome hasn't fired beforeinstallprompt event)
+      // This ensures we only show instructions when we truly can't programmatically install
       if (!success) {
-        // Always show instructions - helps user understand how to install
-        // Even if prompt works, showing instructions is helpful
-        setShowInstallInstructions(true);
+        // Wait a moment to see if deferredPrompt becomes available
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Check one more time if prompt is available now
+        if (!deferredPrompt) {
+          // Still no prompt - this means Chrome won't show it programmatically
+          // Only then show manual instructions as fallback
+          setShowInstallInstructions(true);
+        }
+        // If deferredPrompt exists but success is false, user probably dismissed it
+        // Don't show instructions - let them try again later
       }
     }
   };
@@ -330,5 +348,4 @@ const Home = () => {
 };
 
 export default Home;
-
 

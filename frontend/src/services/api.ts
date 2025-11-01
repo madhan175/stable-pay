@@ -31,7 +31,23 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    // Only log errors - don't show popups for wallet linking errors (they're non-critical)
+    if (error.config?.url?.includes('link-wallet')) {
+      // Wallet linking errors are expected in some cases (user not found, etc.)
+      // Log quietly without showing error to user
+      console.warn('⚠️ [API] Wallet link error (non-critical):', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.response?.data?.error || error.message,
+        url: error.config?.url
+      });
+    } else {
+      // For other errors, log normally
+      console.error('❌ [API] Error:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        data: error.response?.data || error.message
+      });
+    }
     return Promise.reject(error);
   }
 );
@@ -56,8 +72,8 @@ export const kycAPI = {
 
 // User API
 export const userAPI = {
-  linkWallet: (userId: string, walletAddress: string) => 
-    api.post('/user/link-wallet', { userId, walletAddress }),
+  linkWallet: (userId: string, walletAddress: string, phone?: string) => 
+    api.post('/user/link-wallet', { userId, walletAddress, phone }),
 };
 
 // Transaction API

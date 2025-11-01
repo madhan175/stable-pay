@@ -36,39 +36,90 @@ class SocketService {
       }
 
       // Get server URL from environment variable
-      let serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const envApiUrl = import.meta.env.VITE_API_URL;
+      const isProduction = import.meta.env.PROD;
+      
+      // In production, require VITE_API_URL
+      if (isProduction) {
+        if (!envApiUrl || envApiUrl.trim() === '' || envApiUrl === 'undefined') {
+          console.error('❌ [SOCKET] VITE_API_URL is required in production but not set!');
+          console.error('❌ [SOCKET] WebSocket connection disabled.');
+          console.error('❌ [SOCKET] Set VITE_API_URL in Vercel: Settings → Environment Variables');
+          return null;
+        }
+      }
+      
+      let serverUrl = envApiUrl || 'http://localhost:5000';
       
       // Check if we're in production and VITE_API_URL is not set
-      if (import.meta.env.PROD && (!import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL === 'undefined')) {
-        console.warn('⚠️ [SOCKET] VITE_API_URL not set in production! WebSocket will not connect.');
-        console.warn('⚠️ [SOCKET] Please set VITE_API_URL in Vercel environment variables.');
-        console.warn('⚠️ [SOCKET] Go to: Vercel Dashboard → Your Project → Settings → Environment Variables');
-        return null;
+      if (import.meta.env.PROD) {
+        if (!envApiUrl || envApiUrl === 'undefined' || envApiUrl.trim() === '') {
+          console.warn('⚠️ [SOCKET] VITE_API_URL not set in production! WebSocket will not connect.');
+          console.warn('⚠️ [SOCKET] Please set VITE_API_URL in Vercel environment variables.');
+          console.warn('⚠️ [SOCKET] Go to: Vercel Dashboard → Your Project → Settings → Environment Variables');
+          return null;
+        }
+        
+        // Prevent localhost connections in production
+        if (serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1')) {
+          console.error('❌ [SOCKET] Cannot use localhost in production. Set VITE_API_URL to your backend URL.');
+          console.error('❌ [SOCKET] Current value:', envApiUrl);
+          return null;
+        }
       }
       
       // Ensure URL doesn't have trailing slash
-      serverUrl = serverUrl.replace(/\/+$/, '');
-      
-      // Log the URL being used (helps with debugging)
-      console.log('🔌 [SOCKET] Connecting to:', serverUrl);
-      console.log('🔌 [SOCKET] Environment variable:', import.meta.env.VITE_API_URL || 'NOT SET (using default)');
+      serverUrl = serverUrl.replace(/\/+$/, '').trim();
       
       // Validate URL format
-      if (!serverUrl || serverUrl === 'undefined' || serverUrl === 'http://localhost:5000' && import.meta.env.PROD) {
+      if (!serverUrl || serverUrl === 'undefined' || serverUrl === '') {
         console.error('❌ [SOCKET] Invalid server URL. Check VITE_API_URL environment variable.');
-        console.error('❌ [SOCKET] Cannot use localhost in production. Set VITE_API_URL to your backend URL.');
+        console.error('❌ [SOCKET] Current value:', envApiUrl);
         return null;
       }
       
-      this.socket = io(serverUrl, {
-        transports: ['websocket', 'polling'],
+      // For localhost, keep HTTP (Socket.IO will use ws:// automatically)
+      // For production, use HTTPS for secure WebSocket (wss://)
+      let socketUrl = serverUrl;
+      const isLocalhost = serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1');
+      
+      if (serverUrl.startsWith('http://') && !isLocalhost) {
+        // Only convert to HTTPS for non-localhost URLs (production)
+        socketUrl = serverUrl.replace('http://', 'https://');
+        console.log('🔒 [SOCKET] Production URL detected, using HTTPS for secure WebSocket');
+      } else if (isLocalhost && serverUrl.startsWith('https://')) {
+        // If somehow localhost has https://, convert back to http://
+        socketUrl = serverUrl.replace('https://', 'http://');
+        console.log('🔓 [SOCKET] Localhost detected, using HTTP (Socket.IO will use ws://)');
+      }
+      
+      // Log the URL being used (helps with debugging)
+      console.log('🔌 [SOCKET] Connecting to:', socketUrl);
+      console.log('🔌 [SOCKET] Environment variable:', envApiUrl || 'NOT SET (using default localhost:5000)');
+      console.log('🔌 [SOCKET] Mode:', import.meta.env.PROD ? 'PRODUCTION' : 'DEVELOPMENT');
+      
+      // Detect if we're on Render free tier (onrender.com domain)
+      // Render free tier has issues with WebSocket - use polling first
+      const isRenderFreeTier = socketUrl.includes('onrender.com');
+      
+      if (isRenderFreeTier) {
+        console.log('🔧 [SOCKET] Detected Render deployment - using polling-first mode for reliability');
+        console.log('💡 [SOCKET] Tip: Upgrade to Render Starter ($7/mo) for always-on service with WebSocket');
+      }
+      
+      this.socket = io(socketUrl, {
+        // On Render free tier, prefer polling first (more reliable with spin-downs)
+        // Otherwise, try websocket first for better performance
+        transports: isRenderFreeTier ? ['polling', 'websocket'] : ['websocket', 'polling'],
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        timeout: 20000,
-        // Force upgrade to secure WebSocket for HTTPS
-        upgrade: true,
-        rememberUpgrade: true,
+        reconnectionDelay: isRenderFreeTier ? 2000 : 1000, // Longer delay for Render free tier
+        reconnectionAttempts: isRenderFreeTier ? 10 : 5, // More attempts for Render free tier
+        timeout: 30000, // Longer timeout for Render spin-up
+        // On Render free tier, don't upgrade to WebSocket immediately
+        upgrade: !isRenderFreeTier, // Disable upgrade on Render free tier
+        rememberUpgrade: !isRenderFreeTier,
+        // Auto-detect secure WebSocket: only use secure for HTTPS (production), not for localhost
+        secure: socketUrl.startsWith('https://') && !isLocalhost,
       });
 
       // Add error handlers to prevent unhandled promise rejections
@@ -82,8 +133,14 @@ class SocketService {
 
       this.socket.on('connect_error', (error) => {
         console.warn('⚠️ [SOCKET] Connection error:', error.message);
-        console.warn('⚠️ [SOCKET] Attempted URL:', serverUrl);
-        console.warn('⚠️ [SOCKET] Make sure VITE_API_URL is set in Vercel environment variables');
+        console.warn('⚠️ [SOCKET] Attempted URL:', socketUrl);
+        if (import.meta.env.PROD) {
+          console.warn('⚠️ [SOCKET] Make sure VITE_API_URL is set in Vercel environment variables');
+          console.warn('⚠️ [SOCKET] Current value:', envApiUrl || 'NOT SET');
+        } else {
+          console.warn('⚠️ [SOCKET] Make sure backend is running on:', serverUrl);
+          console.warn('⚠️ [SOCKET] Or set VITE_API_URL in .env file');
+        }
         // Don't throw - let it reconnect automatically
       });
 
