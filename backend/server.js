@@ -65,7 +65,7 @@ const isOriginAllowed = (origin) => {
   // Normalize origin: remove trailing slash and protocol variations
   const normalizedOrigin = origin.trim().replace(/\/$/, '');
   
-  // Exact match
+  // Exact match against configured list
   if (allowedOrigins.includes(normalizedOrigin)) {
     return true;
   }
@@ -73,8 +73,18 @@ const isOriginAllowed = (origin) => {
   // Check with http/https variations
   const httpVersion = normalizedOrigin.replace(/^https:/, 'http:');
   const httpsVersion = normalizedOrigin.replace(/^http:/, 'https:');
-  
-  return allowedOrigins.includes(httpVersion) || allowedOrigins.includes(httpsVersion);
+  if (allowedOrigins.includes(httpVersion) || allowedOrigins.includes(httpsVersion)) {
+    return true;
+  }
+
+  // ✅ Wildcard: allow ALL stable-pay Vercel deployment previews (alpha, blond, etc.)
+  // This covers: stable-pay-frontend-alpha.vercel.app, stable-pay-frontend-blond.vercel.app, etc.
+  if (/^https:\/\/stable-pay[\w-]*\.vercel\.app$/.test(normalizedOrigin)) {
+    console.log('✅ [CORS] Allowed Vercel deployment origin:', normalizedOrigin);
+    return true;
+  }
+
+  return false;
 };
 
 const io = socketIo(server, {
