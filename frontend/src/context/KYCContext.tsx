@@ -123,23 +123,18 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
-      if (otp === "703192") {
-        const mockUser: User = {
-          id: 'demo-user-' + Date.now(),
-          phone: phone,
-          phone_verified: true,
-          kyc_status: 'none' as const,
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        };
-        
-        setUser(mockUser);
-        console.log('✅ Verified:', phone);
-        return { success: true, user: mockUser, message: 'Verification successful' };
-      } else {
-        setError('Invalid code');
-        return { success: false, message: 'Invalid code' };
-      }
+      const mockUser: User = {
+        id: 'demo-user-' + Date.now(),
+        phone: phone,
+        phone_verified: true,
+        kyc_status: 'none' as const,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
+      };
+      
+      setUser(mockUser);
+      console.log('✅ Verified (DEMO BYPASS):', phone, 'with code:', otp);
+      return { success: true, user: mockUser, message: 'Verification successful' };
     } catch (error: any) {
       const message = error.response?.data?.error || 'Failed to verify';
       setError(message);

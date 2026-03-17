@@ -37,8 +37,8 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
+    if (!otp.trim()) {
+      setError('Please enter a verification code');
       return;
     }
 
@@ -122,10 +122,9 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
             <input
               type="text"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(e) => setOtp(e.target.value)}
               placeholder="000000"
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition-colors duration-200 text-center text-2xl font-mono tracking-widest"
-              maxLength={6}
               required
             />
           </div>

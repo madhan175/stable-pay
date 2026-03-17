@@ -75,12 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       
       if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
-        if (otp !== "703192") {
-          console.log(`⚠️ Verification failed: Invalid code. Expected 703192, got: ${otp || 'empty'}`);
-          return { success: false, error: 'Please enter the correct 6-digit code' };
-        }
-        
-        console.log(`✅ Verification for ${phone}: ${otp} (ACCEPTED)`);
+        console.log(`✅ Verification for ${phone}: ${otp} (ACCEPTED - DEMO BYPASS)`);
 
         const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '[]');
         let userData = mockUsers.find((user: any) => user.phone === phone);

@@ -171,7 +171,7 @@ const PhoneOTPModal: React.FC<PhoneOTPModalProps> = ({ isOpen, onClose, onSucces
                 <input
                   type="text"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => setOtp(e.target.value)}
                   placeholder="000000"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-2xl font-mono tracking-widest"
                 />
@@ -186,7 +186,7 @@ const PhoneOTPModal: React.FC<PhoneOTPModalProps> = ({ isOpen, onClose, onSucces
               <div className="space-y-3">
                 <button
                   onClick={handleVerifyOTP}
-                  disabled={otp.length !== 6 || isLoading}
+                  disabled={!otp.trim() || isLoading}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
                 >
                   {isLoading ? (
