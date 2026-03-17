@@ -137,7 +137,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // In-memory payments store (for demo)
-const payments = [];
+const payments = [
+  {
+    txHash: '0x7d2a...e92a',
+    sender: '0x1234...5678',
+    receiver: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    amount: '250.00',
+    status: 'success',
+    timestamp: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    txHash: '0x3a1c...b1c2',
+    sender: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+    receiver: '0x8765...4321',
+    amount: '125.50',
+    status: 'success',
+    timestamp: new Date(Date.now() - 7200000).toISOString()
+  }
+];
 
 // File upload config
 const storage = multer.diskStorage({
@@ -1093,8 +1110,11 @@ app.get('/api/merchant-transactions', async (req, res) => {
     const wallet = (req.query.wallet || '').toString().toLowerCase();
     if (!wallet) return res.status(400).json({ error: 'wallet required' });
     
-    // Get from in-memory payments array
-    const inMemoryItems = payments.filter(p => (p.receiver || '').toLowerCase() === wallet);
+    // Get from in-memory payments array - filter by either sender or receiver to show full history
+    const inMemoryItems = payments.filter(p => 
+      (p.receiver || '').toLowerCase() === wallet || 
+      (p.sender || '').toLowerCase() === wallet
+    );
     
     // Also query Supabase for transactions
     let supabaseItems = [];

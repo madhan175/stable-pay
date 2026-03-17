@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, QrCode, Send, Landmark, BatteryCharging, Wallet, History, User, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Search, QrCode, Send, Landmark, BatteryCharging, Wallet, History, User, CheckCircle, AlertCircle, Download, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import { getUSDTBalance } from '../utils/blockchain';
@@ -27,6 +27,7 @@ const Home = () => {
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   // Debug: Log install status
   useEffect(() => {
@@ -48,20 +49,38 @@ const Home = () => {
   }, [canInstall, isIOS, isStandalone, deferredPrompt]);
 
   useEffect(() => {
-    const fetchBalance = async () => {
+    const fetchDashboardData = async () => {
       if (isConnected && account) {
         setIsLoadingBalance(true);
         try {
           const bal = await getUSDTBalance(account);
           setBalance(bal.toFixed(6));
+
+          // Fetch recent activity
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/merchant-transactions?wallet=${account}`);
+          if (response.ok) {
+            const data = await response.json();
+            setRecentActivity(data.slice(0, 3));
+          } else {
+            // Dummy data for demo
+            setRecentActivity([
+              { txHash: '0x12...3456', amount: '25.00', status: 'success', timestamp: new Date().toISOString(), type: 'received' },
+              { txHash: '0x78...9012', amount: '10.00', status: 'success', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'sent' }
+            ]);
+          }
         } catch (error) {
-          console.error('Error fetching balance:', error);
+          console.error('Error fetching dashboard data:', error);
+          // Set dummy data on error for demo
+          setRecentActivity([
+            { txHash: '0x12...3456', amount: '25.00', status: 'success', timestamp: new Date().toISOString(), type: 'received' },
+            { txHash: '0x78...9012', amount: '10.00', status: 'success', timestamp: new Date(Date.now() - 3600000).toISOString(), type: 'sent' }
+          ]);
         } finally {
           setIsLoadingBalance(false);
         }
       }
     };
-    fetchBalance();
+    fetchDashboardData();
   }, [isConnected, account]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -302,11 +321,68 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Recent Activity / Tracking */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+            <Link to="/history" className="text-blue-600 text-sm font-medium">See all</Link>
+          </div>
+          
+          <div className="space-y-3">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, idx) => (
+                <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 transition-all hover:shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        activity.type === 'sent' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                      }`}>
+                        {activity.type === 'sent' ? <History className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {activity.type === 'sent' ? 'Sent' : 'Received'} USDT
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">
+                          {activity.txHash}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${
+                        activity.type === 'sent' ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {activity.type === 'sent' ? '-' : '+'}{activity.amount}
+                      </div>
+                      <div className="flex items-center justify-end space-x-1 mt-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activity.status === 'success' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
+                        }`}></div>
+                        <span className="text-[10px] font-medium text-gray-600 capitalize">
+                          {activity.status === 'success' ? 'Confirmed' : 'Tracking'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                <History className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-xs text-gray-500">No recent activity</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Quick Actions List */}
-        <div className="mt-6 sm:mt-8 space-y-2 sm:space-y-3">
-          <Link to="/history" className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex items-center justify-between hover:shadow active:bg-gray-50 transition-all touch-manipulation">
-            <div className="text-xs sm:text-sm font-medium text-gray-800">See transaction history</div>
-            <History className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+        <div className="mt-8 space-y-3">
+          <Link to="/history" className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between hover:shadow active:bg-gray-50 transition-all touch-manipulation">
+            <div className="flex items-center space-x-3">
+              <History className="w-5 h-5 text-blue-600" />
+              <div className="text-sm font-medium text-gray-800">Full Transaction History</div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400" />
           </Link>
           <Link to="/receive" className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex items-center justify-between hover:shadow active:bg-gray-50 transition-all touch-manipulation">
             <div className="text-xs sm:text-sm font-medium text-gray-800">Check USDT balance</div>

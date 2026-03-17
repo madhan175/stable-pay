@@ -21,6 +21,10 @@ class SupabaseService {
 
   // User operations
   async createUser(userData) {
+    if (!this.supabase) {
+      console.log('ℹ️ [SUPABASE MOCK] Creating mock user:', userData.phone);
+      return { id: 'mock-user-' + Date.now(), ...userData, phone_verified: true, kyc_status: 'none' };
+    }
     const { data, error } = await this.supabase
       .from('users')
       .insert([userData])
@@ -32,6 +36,17 @@ class SupabaseService {
   }
 
   async getUserByPhone(phone) {
+    if (!this.supabase) {
+      console.log('ℹ️ [SUPABASE MOCK] Getting mock user by phone:', phone);
+      // Return a consistent mock user for demo
+      return { 
+        id: 'mock-uuid-1234-5678', 
+        phone, 
+        phone_verified: true, 
+        kyc_status: 'verified',
+        wallet_address: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+      };
+    }
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
@@ -106,6 +121,10 @@ class SupabaseService {
 
   // Transaction operations
   async createTransaction(transactionData) {
+    if (!this.supabase) {
+      console.log('ℹ️ [SUPABASE MOCK] Creating mock transaction');
+      return { id: 'mock-tx-' + Date.now(), created_at: new Date().toISOString(), ...transactionData };
+    }
     const { data, error } = await this.supabase
       .from('transactions')
       .insert([transactionData])
@@ -117,6 +136,21 @@ class SupabaseService {
   }
 
   async getTransactions(userId) {
+    if (!this.supabase) {
+      console.log('ℹ️ [SUPABASE MOCK] Getting mock transactions for:', userId);
+      return [
+        {
+          id: 'mock-tx-1',
+          user_id: userId,
+          recipient_wallet: '0x1234...5678',
+          amount_inr: 1000,
+          amount_usdt: 12.05,
+          status: 'completed',
+          tx_hash: '0xabc...def',
+          created_at: new Date(Date.now() - 3600000).toISOString()
+        }
+      ];
+    }
     const { data, error } = await this.supabase
       .from('transactions')
       .select('*')

@@ -126,6 +126,42 @@ const History = () => {
           }
         });
 
+        // If no transactions found, add more demo ones for a better 'tracking' demo
+        if (formatted.length === 0) {
+          formatted.push(
+            {
+              id: 'demo-1',
+              type: 'sent',
+              amount: '250.00',
+              currency: 'USDT',
+              timestamp: new Date(Date.now() - 3600000).toISOString(),
+              txHash: '0x7d...e92a',
+              status: 'pending',
+              to: '0x1234...5678'
+            },
+            {
+              id: 'demo-2',
+              type: 'received',
+              amount: '125.50',
+              currency: 'USDT',
+              timestamp: new Date(Date.now() - 7200000).toISOString(),
+              txHash: '0x3a...b1c2',
+              status: 'confirmed',
+              from: '0x8765...4321'
+            },
+            {
+              id: 'demo-3',
+              type: 'sent',
+              amount: '50.00',
+              currency: 'USDT',
+              timestamp: new Date(Date.now() - 86400000).toISOString(),
+              txHash: '0x9f...d4e5',
+              status: 'confirmed',
+              to: 'Merchant XYZ'
+            }
+          );
+        }
+
         // Sort by timestamp (newest first)
         formatted.sort((a, b) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -169,10 +205,29 @@ const History = () => {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Just now';
+    if (diffMins < 5) return 'Tracking...';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] sm:text-xs font-medium">Confirmed</span>;
+      case 'pending':
+        return (
+          <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-[10px] sm:text-xs font-medium flex items-center gap-1">
+            <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+            Tracking
+          </span>
+        );
+      case 'failed':
+        return <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] sm:text-xs font-medium">Failed</span>;
+      default:
+        return null;
+    }
   };
 
   const handleReceiptDownload = async (transactionId: string) => {
@@ -311,13 +366,14 @@ const History = () => {
                         <div className="font-semibold text-sm sm:text-base text-gray-900 capitalize truncate">
                           {tx.type === 'sent' ? 'Sent' : tx.type === 'received' ? 'Received' : 'Purchased'} {tx.currency}
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
-                          {formatDate(tx.timestamp)} • {tx.status === 'confirmed' ? 'Confirmed' : tx.status === 'pending' ? 'Pending' : 'Failed'}
+                        <div className="text-xs sm:text-sm text-gray-500 mt-0.5 flex items-center gap-2">
+                          {formatDate(tx.timestamp)} • {getStatusBadge(tx.status)}
                         </div>
                         {tx.txHash && (
-                          <div className="text-xs text-gray-400 font-mono mt-1 break-all sm:break-normal">
-                            <span className="hidden sm:inline">{tx.txHash.slice(0, 10)}...{tx.txHash.slice(-8)}</span>
-                            <span className="sm:hidden">{tx.txHash.slice(0, 8)}...{tx.txHash.slice(-6)}</span>
+                          <div className="text-xs text-gray-400 font-mono mt-1 break-all sm:break-normal flex items-center gap-1">
+                            <Link to={`https://sepolia.etherscan.io/tx/${tx.txHash}`} target="_blank" className="hover:text-blue-500 truncate">
+                              {tx.txHash}
+                            </Link>
                           </div>
                         )}
                       </div>

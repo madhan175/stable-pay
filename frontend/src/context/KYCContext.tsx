@@ -234,6 +234,8 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
       console.log('📊 [FRONTEND MOCK] Amount USD:', mockTransaction.amount_usd);
       console.log('🔐 [FRONTEND MOCK] Requires KYC:', requiresKYC);
 
+      setTransactions(prev => [mockTransaction, ...prev]);
+
       return {
         success: true,
         transaction: mockTransaction,
@@ -314,8 +316,17 @@ export const KYCProvider: React.FC<KYCProviderProps> = ({ children }) => {
         }
       ];
       
-      setTransactions(mockTransactions);
-      console.log('✅ [FRONTEND MOCK] Transaction history loaded:', mockTransactions);
+      // Merge with existing transactions to avoid losing newly created ones in demo
+      setTransactions(prev => {
+        const uniqueTx = [...prev];
+        mockTransactions.forEach(mock => {
+          if (!uniqueTx.find(tx => tx.id === mock.id)) {
+            uniqueTx.push(mock);
+          }
+        });
+        return uniqueTx.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      });
+      console.log('✅ [FRONTEND MOCK] Transaction history loaded/merged:', mockTransactions);
       
       // Uncomment below to use real backend API
       /*
