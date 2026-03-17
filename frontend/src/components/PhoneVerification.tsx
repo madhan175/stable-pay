@@ -25,13 +25,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
     setError('');
 
     const result = await sendOTP(phone);
-    
+
     if (result.success) {
       setStep('otp');
     } else {
       setError(result.error || 'Failed to send');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -46,13 +46,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
     setError('');
 
     const result = await verifyOTP(phone, otp);
-    
+
     if (result.success) {
       onVerified();
     } else {
       setError(result.error || 'Failed to verify OTP');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -63,10 +63,10 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
           <Phone className="w-8 h-8 text-blue-600" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {step === 'phone' ? 'Verify Phone Number' : 'Enter OTP'}
+          {step === 'phone' ? 'Verify Phone Number (MOCK)' : 'Enter OTP (MOCK)'}
         </h2>
         <p className="text-gray-600">
-          {step === 'phone' 
+          {step === 'phone'
             ? 'We need to verify your phone number for security'
             : `We've sent a 6-digit code to ${phone}`
           }
@@ -83,7 +83,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified }) => 
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91XXXXXXXXXX"
+              placeholder="+918331823668"
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition-colors duration-200"
               required
             />
