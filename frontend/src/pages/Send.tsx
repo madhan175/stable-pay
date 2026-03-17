@@ -7,7 +7,7 @@ import WalletConnect from '../components/WalletConnect';
 import PhoneOTPModal from '../components/PhoneOTPModal';
 import KYCModal from '../components/KYCModal';
 import CurrencyRateDisplay from '../components/CurrencyRateDisplay';
-import { convertINRToUSDT, sendUSDT } from '../utils/blockchain';
+import { sendUSDT } from '../utils/blockchain';
 import { paymentsAPI } from '../services/api';
 import { frontendContractService, SwapRecord } from '../utils/contractIntegration';
 import { Link } from 'react-router-dom';
@@ -152,11 +152,20 @@ const Send = () => {
           gstRate: gstRate + '%'
         });
       } else {
-        // Fallback to mock conversion
-        const converted = await convertINRToUSDT(parseFloat(inrAmount));
-        beforeGstValue = converted;  // This gives before GST in mock
-        gstValue = converted * 0.18;
-        usdtValue = converted - gstValue;  // After GST
+        // Fallback: fetch real-time rate directly
+        let usdToInrRate = 83.0; // default fallback
+        try {
+          const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+          if (rateRes.ok) {
+            const rateData = await rateRes.json();
+            usdToInrRate = rateData.rates?.INR || 83.0;
+          }
+        } catch {
+          console.warn('⚠️ [SEND] Rate API failed, using default 83 INR/USD');
+        }
+        beforeGstValue = parseFloat(inrAmount) / usdToInrRate;
+        gstValue = beforeGstValue * 0.18;
+        usdtValue = beforeGstValue - gstValue;
         setUsdtAmount(usdtValue.toFixed(6));
         setGstAmount(gstValue.toFixed(6));
         setUsdtBeforeGst(beforeGstValue.toFixed(6));

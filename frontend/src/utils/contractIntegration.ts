@@ -237,8 +237,87 @@ export class FrontendContractService {
     return this.signer!;
   }
 
+  // Fetch real-time INR to USD rate
+  private async getRealTimeINRToUSDRate(): Promise<number> {
+    // Try multiple free APIs for redundancy
+    const apis = [
+      // ExchangeRate-API (free, no key needed for basic)
+      async () => {
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (!res.ok) throw new Error('ExchangeRate-API failed');
+        const data = await res.json();
+        return data.rates?.INR as number; // USD per INR → we need INR per USD
+      },
+      // Frankfurter API (European Central Bank data, free, no key)
+      async () => {
+        const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=INR');
+        if (!res.ok) throw new Error('Frankfurter API failed');
+        const data = await res.json();
+        return data.rates?.INR as number;
+      },
+    ];
+
+    for (const apiFn of apis) {
+      try {
+        const usdToInr = await apiFn();
+        if (usdToInr && usdToInr > 0) {
+          console.log(`✅ [RATE] Real-time USD/INR rate: 1 USD = ${usdToInr} INR`);
+          return usdToInr;
+        }
+      } catch (e) {
+        console.warn('⚠️ [RATE] API failed, trying next:', e);
+      }
+    }
+
+    // Fallback to a reasonable hardcoded rate if all APIs fail
+    console.warn('⚠️ [RATE] All rate APIs failed, using fallback: 1 USD = 83 INR');
+    return 83.0;
+  }
+
   // Calculate swap amounts
   async calculateSwap(fromCurrency: string, toCurrency: string, fromAmount: string): Promise<SwapCalculation> {
+    // ✅ ALWAYS use real-time rate for INR→USDT conversion.
+    // The on-chain contract stores INR rate as ~88 which is INVERTED (it means 88 USD per INR),
+    // so we bypass the contract entirely for this conversion and use a live exchange rate API.
+    if (fromCurrency === 'INR' && (toCurrency === 'USDT' || toCurrency === 'USD')) {
+      try {
+        const usdToInr = await this.getRealTimeINRToUSDRate();
+        const inrAmount = parseFloat(fromAmount);
+        
+        // Convert INR to USDT (1 USDT ≈ 1 USD)
+        const usdtBeforeGst = inrAmount / usdToInr;
+        
+        // Apply 18% GST
+        const gstRate = 0.18;
+        const gstAmount = usdtBeforeGst * gstRate;
+        const usdtAfterGst = usdtBeforeGst - gstAmount;
+
+        console.log('✅ [REAL-TIME] INR→USDT conversion:', {
+          inrAmount,
+          usdToInr,
+          usdtBeforeGst: usdtBeforeGst.toFixed(6),
+          gstAmount: gstAmount.toFixed(6),
+          usdtAfterGst: usdtAfterGst.toFixed(6)
+        });
+
+        return {
+          toAmount: usdtAfterGst.toFixed(6),
+          gstAmount: gstAmount.toFixed(6)
+        };
+      } catch (error) {
+        console.error('❌ [REAL-TIME] Rate fetch failed, using fallback INR rate:', error);
+        // Hardcoded fallback: 1 USD = 83 INR
+        const inrAmount = parseFloat(fromAmount);
+        const usdtBeforeGst = inrAmount / 83.0;
+        const gstAmount = usdtBeforeGst * 0.18;
+        return {
+          toAmount: (usdtBeforeGst - gstAmount).toFixed(6),
+          gstAmount: gstAmount.toFixed(6)
+        };
+      }
+    }
+
+    // For other currency pairs, try the contract
     try {
       const contract = await this.getContract();
       const fromAmountRaw = ethers.parseUnits(fromAmount, 18); // Contract expects 18 decimals
@@ -253,8 +332,8 @@ export class FrontendContractService {
       const result = await contract.calculateSwap(fromCurrency, toCurrency, fromAmountRaw);
       
       const calculation = {
-        toAmount: ethers.formatUnits(result[0], 18), // Returns USDT in 18 decimals
-        gstAmount: ethers.formatUnits(result[1], 18) // Returns GST in 18 decimals
+        toAmount: ethers.formatUnits(result[0], 18),
+        gstAmount: ethers.formatUnits(result[1], 18)
       };
       
       console.log('✅ [CONTRACT] Swap calculation completed:', calculation);
@@ -262,10 +341,9 @@ export class FrontendContractService {
     } catch (error: any) {
       console.error('❌ [CONTRACT] Calculate swap failed:', error);
       
-      // Fallback to mock calculation
-      console.log('🔄 [CONTRACT] Falling back to mock calculation');
-      const mockRate = 0.012; // Mock INR to USDT rate
-      const gstRate = 0.18; // 18% GST
+      // Fallback mock calculation
+      const mockRate = 0.012;
+      const gstRate = 0.18;
       const usdtAmount = parseFloat(fromAmount) * mockRate;
       const gstAmount = usdtAmount * gstRate;
       
