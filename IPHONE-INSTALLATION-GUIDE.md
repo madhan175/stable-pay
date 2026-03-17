@@ -6,6 +6,7 @@ This guide explains how to install StablePay on your iPhone and connect to MetaM
 
 ### Step 1: Open StablePay in Safari
 
+
 1. Open **Safari** browser on your iPhone
 2. Navigate to your StablePay website URL
 3. Wait for the page to load completely

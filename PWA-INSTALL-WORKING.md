@@ -81,3 +81,4 @@ const handleInstallClick = async () => {
 
 Just restart your dev server and hard refresh!
 
+

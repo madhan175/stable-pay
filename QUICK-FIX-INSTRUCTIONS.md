@@ -51,3 +51,4 @@ Your app should now work correctly. The OTP verification will no longer throw 40
 - OTP Errors: See `FIX-SUPABASE-RLS-ERROR.md`
 - Transaction History: See `FIX-TRANSACTION-HISTORY.md`
 
+

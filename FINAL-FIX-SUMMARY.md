@@ -4,6 +4,7 @@
 
 You were getting an alert popup instead of Chrome's native install popup when clicking "Install Now".
 
+
 ## ✅ Solution
 
 **Reverted PWAInstallPrompt component to the simple working version** (same as your Vercel deployment).

@@ -4,6 +4,7 @@ This document provides an overview of the StablePay project structure and deploy
 
 ## 📁 Project Structure
 
+
 ```
 StablePay2.0/
 ├── frontend/          # React + Vite frontend (Deploy to Vercel)

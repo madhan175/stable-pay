@@ -2,6 +2,7 @@
 
 Welcome to the StablePay 2.0 deployment documentation! This guide will help you deploy the entire application to production.
 
+
 ## 📖 Table of Contents
 
 1. [Quick Start](#quick-start)

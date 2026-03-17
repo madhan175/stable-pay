@@ -2,6 +2,7 @@
 
 Complete list of all environment variables needed for backend (Render) and frontend (Vercel) deployment.
 
+
 ## Backend Environment Variables (Render)
 
 ### Required Variables

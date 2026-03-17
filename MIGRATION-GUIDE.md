@@ -5,6 +5,7 @@
 ### Step 1: Run Database Migration
 Execute the SQL migration in your Supabase dashboard:
 
+
 ```sql
 -- Add sender_wallet column
 ALTER TABLE transactions 

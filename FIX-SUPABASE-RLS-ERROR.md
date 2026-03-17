@@ -2,6 +2,7 @@
 
 > **⏱️ Quick Fix?** See [QUICK-FIX-INSTRUCTIONS.md](QUICK-FIX-INSTRUCTIONS.md) for the 2-minute solution!
 
+
 ## Problem
 
 After deploying to Vercel, you're getting these errors:

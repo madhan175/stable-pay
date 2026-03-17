@@ -4,6 +4,7 @@
 
 Transactions are being inserted into the `transactions` table but they're not appearing in the transaction history view after completion.
 
+
 ## Root Cause
 
 The Supabase database has Row Level Security (RLS) policies on the `transactions` table that require Supabase authentication (`auth.uid()`). However, your application uses **phone-based authentication** instead of Supabase auth. This means:

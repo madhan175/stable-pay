@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,17 +13,20 @@
             padding: 20px;
             background: #f5f5f5;
         }
+
         .container {
             background: white;
             border-radius: 8px;
             padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             color: #333;
             border-bottom: 3px solid #0070f3;
             padding-bottom: 10px;
         }
+
         .test-section {
             margin: 20px 0;
             padding: 20px;
@@ -30,6 +34,7 @@
             border-radius: 5px;
             background: #fafafa;
         }
+
         .status {
             display: inline-block;
             padding: 5px 15px;
@@ -37,10 +42,27 @@
             font-weight: bold;
             margin: 5px 0;
         }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        .warning { background: #fff3cd; color: #856404; }
-        .info { background: #d1ecf1; color: #0c5460; }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
         button {
             background: #0070f3;
             color: white;
@@ -51,16 +73,30 @@
             font-size: 16px;
             margin: 10px 0;
         }
-        button:hover { background: #0051cc; }
-        #results { margin-top: 20px; }
+
+        button:hover {
+            background: #0051cc;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
         .result-item {
             margin: 10px 0;
             padding: 10px;
             background: white;
             border-left: 4px solid #0070f3;
         }
-        .result-item.error { border-left-color: #dc3545; }
-        .result-item.success { border-left-color: #28a745; }
+
+        .result-item.error {
+            border-left-color: #dc3545;
+        }
+
+        .result-item.success {
+            border-left-color: #28a745;
+        }
+
         code {
             background: #f4f4f4;
             padding: 2px 6px;
@@ -69,20 +105,23 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🔍 Render & Vercel Connection Tester</h1>
         <p>This tool tests the connection between your backend (Render) and frontend (Vercel).</p>
-        
+
         <div class="test-section">
             <h2>Configuration</h2>
             <div>
                 <label>Backend URL:</label><br>
-                <input type="text" id="backendUrl" value="https://stable-pay-mkkj.onrender.com" style="width: 100%; padding: 8px; margin: 5px 0;">
+                <input type="text" id="backendUrl" value="https://stable-pay-mkkj.onrender.com"
+                    style="width: 100%; padding: 8px; margin: 5px 0;">
             </div>
             <div style="margin-top: 10px;">
                 <label>Frontend URL (for CORS check):</label><br>
-                <input type="text" id="frontendUrl" value="https://stable-pay-21.vercel.app" style="width: 100%; padding: 8px; margin: 5px 0;">
+                <input type="text" id="frontendUrl" value="https://stable-pay-21.vercel.app"
+                    style="width: 100%; padding: 8px; margin: 5px 0;">
             </div>
         </div>
 
@@ -104,7 +143,7 @@
         function renderResults() {
             const container = document.getElementById('results');
             container.innerHTML = '<h2>Test Results</h2>';
-            
+
             results.forEach(result => {
                 const div = document.createElement('div');
                 div.className = `result-item ${result.type}`;
@@ -125,7 +164,7 @@
         async function runTests() {
             clearResults();
             addResult('🔬', 'Starting Tests', 'Running comprehensive connection tests...', 'info');
-            
+
             const backendUrl = document.getElementById('backendUrl').value.trim();
             const frontendUrl = document.getElementById('frontendUrl').value.trim();
 
@@ -136,19 +175,19 @@
                 const response = await fetch(`${backendUrl}/health`);
                 const duration = Date.now() - startTime;
                 const data = await response.json();
-                
+
                 if (response.ok && data.status) {
-                    addResult('✅', 'Backend Reachable', 
-                        `Success! Backend responded in ${duration}ms. Status: ${data.status}`, 
+                    addResult('✅', 'Backend Reachable',
+                        `Success! Backend responded in ${duration}ms. Status: ${data.status}`,
                         'success');
                 } else {
-                    addResult('⚠️', 'Backend Response', 
-                        `Backend returned status ${response.status}`, 
+                    addResult('⚠️', 'Backend Response',
+                        `Backend returned status ${response.status}`,
                         'warning');
                 }
             } catch (error) {
-                addResult('❌', 'Backend Unreachable', 
-                    `Failed to connect: ${error.message}. Is your backend deployed?`, 
+                addResult('❌', 'Backend Unreachable',
+                    `Failed to connect: ${error.message}. Is your backend deployed?`,
                     'error');
             }
 
@@ -160,31 +199,31 @@
                         'Origin': frontendUrl
                     }
                 });
-                
+
                 if (response.ok) {
                     const corsHeader = response.headers.get('access-control-allow-origin');
                     if (corsHeader) {
-                        addResult('✅', 'CORS Working', 
-                            `CORS is configured. Allowed origin: ${corsHeader}`, 
+                        addResult('✅', 'CORS Working',
+                            `CORS is configured. Allowed origin: ${corsHeader}`,
                             'success');
                     } else {
-                        addResult('⚠️', 'CORS Header Missing', 
-                            'Backend responded but no CORS header found', 
+                        addResult('⚠️', 'CORS Header Missing',
+                            'Backend responded but no CORS header found',
                             'warning');
                     }
                 } else {
-                    addResult('❌', 'CORS Failed', 
-                        `Backend returned ${response.status}`, 
+                    addResult('❌', 'CORS Failed',
+                        `Backend returned ${response.status}`,
                         'error');
                 }
             } catch (error) {
                 if (error.message.includes('CORS')) {
-                    addResult('❌', 'CORS Error', 
-                        `CORS is blocking requests. Add ${frontendUrl} to ALLOWED_ORIGINS in Render`, 
+                    addResult('❌', 'CORS Error',
+                        `CORS is blocking requests. Add ${frontendUrl} to ALLOWED_ORIGINS in Render`,
                         'error');
                 } else {
-                    addResult('❌', 'CORS Test Failed', 
-                        error.message, 
+                    addResult('❌', 'CORS Test Failed',
+                        error.message,
                         'error');
                 }
             }
@@ -192,9 +231,9 @@
             // Test 3: Environment Variable Check
             addResult('3️⃣', 'Frontend Environment', 'Checking frontend configuration...', 'info');
             // Can't check this from a static HTML file, but provide guidance
-            addResult('ℹ️', 'Frontend Config Check', 
-                'Please verify VITE_API_URL is set in Vercel: Settings → Environment Variables → Should be: <code>' + 
-                backendUrl + '</code>', 
+            addResult('ℹ️', 'Frontend Config Check',
+                'Please verify VITE_API_URL is set in Vercel: Settings → Environment Variables → Should be: <code>' +
+                backendUrl + '</code>',
                 'info');
 
             // Test 4: Response Time
@@ -207,46 +246,46 @@
                     times.push(Date.now() - start);
                 }
                 const avgTime = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(0);
-                
+
                 if (avgTime > 10000) {
-                    addResult('⚠️', 'Slow Response', 
-                        `Average response time: ${avgTime}ms (slow). Backend may be on free tier spinning up`, 
+                    addResult('⚠️', 'Slow Response',
+                        `Average response time: ${avgTime}ms (slow). Backend may be on free tier spinning up`,
                         'warning');
                 } else {
-                    addResult('✅', 'Good Response Time', 
-                        `Average response time: ${avgTime}ms`, 
+                    addResult('✅', 'Good Response Time',
+                        `Average response time: ${avgTime}ms`,
                         'success');
                 }
             } catch (error) {
-                addResult('❌', 'Response Time Failed', 
-                    error.message, 
+                addResult('❌', 'Response Time Failed',
+                    error.message,
                     'error');
             }
 
             // Test 5: WebSocket (can't test from static HTML, but provide guidance)
             addResult('5️⃣', 'WebSocket Check', 'Instructions for WebSocket test...', 'info');
-            addResult('ℹ️', 'WebSocket Test', 
+            addResult('ℹ️', 'WebSocket Test',
                 'Go to your Vercel app, open browser console (F12), and check for:<br>' +
-                '<code>🔗 [SOCKET] Connected to KYC socket server</code>', 
+                '<code>🔗 [SOCKET] Connected to KYC socket server</code>',
                 'info');
 
             // Summary
             const successCount = results.filter(r => r.type === 'success').length;
             const errorCount = results.filter(r => r.type === 'error').length;
             const totalTests = results.filter(r => r.type !== 'info').length;
-            
-            addResult('📊', 'Summary', 
+
+            addResult('📊', 'Summary',
                 `${successCount}/${totalTests} tests passed. ` +
-                `${errorCount} errors found.`, 
+                `${errorCount} errors found.`,
                 errorCount > 0 ? 'error' : (successCount === totalTests ? 'success' : 'warning'));
 
             // Recommendations
             if (errorCount > 0) {
-                addResult('💡', 'Recommendations', 
+                addResult('💡', 'Recommendations',
                     '1. Check Render dashboard: Is service "Live"?<br>' +
                     '2. Check Render logs: Any errors?<br>' +
                     '3. Verify ALLOWED_ORIGINS in Render includes: ' + frontendUrl + '<br>' +
-                    '4. Restart Render service if needed', 
+                    '4. Restart Render service if needed',
                     'info');
             }
         }
@@ -259,4 +298,5 @@
         });
     </script>
 </body>
+
 </html>

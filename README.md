@@ -219,3 +219,4 @@ This project is licensed under the MIT License.
 ## ⚠️ Disclaimer
 
 This is a demo application for educational purposes. Do not use with real funds on mainnet without proper security audits and regulatory compliance.
+
