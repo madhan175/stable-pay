@@ -82,71 +82,60 @@ StablePay 2.0 Protocol (Drunix / EVM + NPCI UPI)
 
 ## 💡 The StablePay 2.0 Solution
 
-StablePay 2.0 eliminates intermediaries by combining **NPCI's instant UPI settlement infrastructure** with **programmable smart contracts**:
+**StablePay 2.0** is an institutional cross-border payment infrastructure that uses stablecoins as an underlying settlement rail while keeping blockchain complexity completely invisible to the end user. 
 
-1. **Seamless Bi-Directional Exchange**:
-   - **UPI ➔ USDT**: Users or merchants can convert INR funds into USDT instantaneously via UPI payment reference validation.
-   - **USDT ➔ UPI (Direct Remittance)**: Global senders pay with stablecoins; recipient merchants or individuals receive immediate INR credits into their UPI-linked bank accounts.
-2. **On-Chain Taxation & Compliance (`FiatUSDTSwap.sol`)**:
-   - Smart contracts automatically deduct and log statutory taxes (such as 18% GST and 1% TDS on crypto transfers) into verifiable on-chain ledgers, removing compliance headaches for users and merchants.
-3. **AI-Powered KYC & Automated Identity Verification**:
-   - Embedded OCR engine (Tesseract + Computer Vision) parses Indian identity documents (Aadhaar, PAN Card, Passports) in real time.
-   - Dual-factor authentication with SMS OTP and biometric face verification for high-value transactions (> $200 threshold).
-4. **Mobile-First Progressive Web App (PWA)**:
-   - Zero app-store gatekeeping: Installs directly onto iOS, Android, and Desktop as a standalone PWA.
-   - Integrated camera-based QR scanner supporting both UPI BharatQR codes and Ethereum wallet addresses.
-5. **Real-Time WebSocket Liquidity & Rate Engine**:
-   - Live streaming currency exchange rates (USD/INR, USDT/INR) with micro-spread calculations and slippage protection.
+Rather than seeking to replace commercial banks or sovereign domestic payment systems (like NPCI's UPI), StablePay 2.0 **upgrades the cross-border settlement layer underneath them**. 
+
+A global sender initiates a transfer in their local fiat currency. The platform determines an optimal liquidity and settlement route, converts the value into a secure stablecoin asset (USDT/USDC), settles it over EVM-compatible execution layers (including the **Drunix platform** and **Sepolia**), and delivers the proceeds instantly into the recipient's domestic bank account via UPI in INR.
+
+The core breakthrough is a **7-Layer Modular Architecture** driven by a **Smart Liquidity Routing Engine** that evaluates live FX spreads, liquidity depth, network gas costs, settlement latency, and statutory compliance before executing an atomic swap.
 
 ---
 
-## 🏛 System Architecture
-
-The following diagram illustrates the end-to-end data flow between the user, the backend orchestration engine, the on-chain smart contracts, and the banking/UPI rails:
+## 🏛 7-Layer System Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                CLIENT / PWA LAYER                                      │
-│  ┌────────────────────────┐  ┌────────────────────────┐  ┌──────────────────────────┐  │
-│  │   Merchant Dashboard   │  │   Consumer PWA App     │  │   Camera QR Scanner      │  │
-│  │   (Vite + React 18)    │  │   (Tailwind + Framer)  │  │   (HTML5-QRCode + Three) │  │
-│  └───────────┬────────────┘  └───────────┬────────────┘  └────────────┬─────────────┘  │
-└──────────────┼───────────────────────────┼────────────────────────────┼────────────────┘
-               │                           │                            │
-               ▼                           ▼                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                          ORCHESTRATION & GATEWAY LAYER                                 │
-│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                         Node.js + Express API Gateway                            │  │
-│  │  - CORS Middleware (Production Whitelisting & Origin Normalization)              │  │
-│  │  - Rate Limiting, GeoIP Defense & JWT Stateless Session Management               │  │
-│  └───────────────────┬──────────────────────────────────────┬───────────────────────┘  │
-│                      │                                      │                          │
-│                      ▼                                      ▼                          │
-│  ┌──────────────────────────────────────┐  ┌────────────────────────────────────────┐  │
-│  │      AI OCR & Verification Engine    │  │       Socket.IO Real-Time Stream       │  │
-│  │  - Document Parser (PAN/Aadhaar/Pass)│  │  - Live Swap Rate Feeds & Price Ticks  │  │
-│  │  - Tesseract OCR + Vision Processing │  │  - Instant Payment Confirmation Pushes │  │
-│  │  - Twilio Telephony OTP Service      │  │  - Automated Balance Delta Sync        │  │
-│  └───────────────────┬──────────────────┘  └────────────────┬───────────────────────┘  │
-└──────────────────────┼──────────────────────────────────────┼──────────────────────────┘
-                       │                                      │
-                       ▼                                      ▼
-┌─────────────────────────────────────────┐  ┌───────────────────────────────────────────┐
-│           PERSISTENCE LAYER             │  │        BLOCKCHAIN / SETTLEMENT LAYER      │
-│  ┌───────────────────────────────────┐  │  │  ┌──────────────────────────────────────┐ │
-│  │          Supabase PostgreSQL      │  │  │  │       FiatUSDTSwap Smart Contract    │ │
-│  │  - Encrypted User Profiles        │  │  │  │  - Atomic Swap Execution Engine      │ │
-│  │  - Auditable Transaction Logs     │  │  │  │  - Dynamic Slippage Protection       │ │
-│  │  - Row-Level Security (RLS) Enforced││  │  │  - Automated GST & TDS Calculation   │ │
-│  │  - Encrypted KYC Storage Vault    │  │  │  │  - SafeERC20 Reentrancy Guard        │ │
-│  └───────────────────────────────────┘  │  │  └──────────────────┬───────────────────┘ │
-└─────────────────────────────────────────┘  │                     │                     │
-                                             │  ┌──────────────────┴───────────────────┐ │
-                                             │  │      Mock USDT ERC-20 / Sepolia      │ │
-                                             │  │      Drunix EVM Native Compatibility │ │
-                                             │  └──────────────────────────────────────┘ │
-                                             └───────────────────────────────────────────┘
+│  LAYER 7: USER INTERFACE & PWA EXPERIENCE                                              │
+│  - Zero-barrier Progressive Web App (iOS / Android / Desktop)                          │
+│  - Integrated Camera QR Scanner (BharatQR, UPI Intent, Web3 Wallets)                  │
+│  - Biometric WebAuthn & 3D Interactive WebGL Visuals                                  │
+└────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                         │
+┌────────────────────────────────────────▼───────────────────────────────────────────────┐
+│  LAYER 6: PAYMENT ORCHESTRATION & COMPLIANCE LAYER                                     │
+│  - End-to-end transaction lifecycle tracking (Initiation ➔ Finality)                   │
+│  - Automated statutory tax accounting (Built-in 18% GST & 1% TDS computation)          │
+│  - AI-powered OCR Identity Verification (Aadhaar / PAN / Passport) & SMS OTP           │
+│  - Real-time WebSocket state streaming (Socket.IO)                                     │
+└────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                         │
+┌────────────────────────────────────────▼───────────────────────────────────────────────┐
+│  LAYER 3: SMART LIQUIDITY ROUTING ENGINE                                               │
+│  - Evaluates real-time FX exchange rates & provider fees                               │
+│  - Dynamic slippage protection & gas optimization algorithms                           │
+│  - Selects optimal atomic route between fiat rails and stablecoin liquidity pools      │
+└───────────────────┬────────────────────────────────────────────┬───────────────────────┘
+                    │                                            │
+┌───────────────────▼─────────────────────┐  ┌───────────────────▼───────────────────────┐
+│  LAYER 1: FIAT ON-RAMP LAYER            │  │  LAYER 5: FIAT OFF-RAMP LAYER (UPI/NPCI) │
+│  - Ingests fiat from global senders     │  │  - Instant payout directly into Indian    │
+│  - Bank transfer & card rails           │  │    bank accounts via recipient UPI VPAs   │
+│  - Webhook validation & proof of deposit│  │  - Zero crypto custody friction for MSMEs │
+└───────────────────┬─────────────────────┘  └───────────────────┬───────────────────────┘
+                    │                                            │
+┌───────────────────▼────────────────────────────────────────────▼───────────────────────┐
+│  LAYER 2: LIQUIDITY & TREASURY LAYER                                                   │
+│  - Rebalances fiat/stablecoin liquidity between regional corridors                     │
+│  - Citi Treasury mentorship aligned liquidity management & reserve verification        │
+└────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                         │
+┌────────────────────────────────────────▼───────────────────────────────────────────────┐
+│  LAYER 4: BLOCKCHAIN SETTLEMENT LAYER (DRUNIX EVM / SEPOLIA)                           │
+│  - FiatUSDTSwap.sol Core Smart Contract                                                │
+│  - Atomic on-chain swap execution & cryptographic txHash deduplication                 │
+│  - SafeERC20 asset custody (USDT / USDC) with sub-second settlement finality           │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
