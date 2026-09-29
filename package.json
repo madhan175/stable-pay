@@ -5,8 +5,7 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend",
-    "contarcts"
+    "backend"
   ],
   "scripts": {
     "dev:frontend": "cd frontend && npm run dev",
